@@ -1,6 +1,6 @@
-import { useCallback, createElement as h } from "react";
+import { useCallback, createElement as h, Fragment } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, X, AlertCircle } from "lucide-react";
+import { Upload, FileText, X, AlertCircle, Loader2 } from "lucide-react";
 import { useKoperasiStore } from "@/store/useKoperasiStore";
 import { formatFileSize } from "@/utils/colorGrading";
 
@@ -17,7 +17,7 @@ const btnPrimary =
 const btnGhost =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-transparent px-3 py-1.5 text-base font-medium text-slate-600 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2";
 
-function FilePreview({ file, onRemove, onProcess }) {
+function FilePreview({ file, onRemove, onProcess, isProcessing }) {
   return h(
     "div",
     {
@@ -54,6 +54,7 @@ function FilePreview({ file, onRemove, onProcess }) {
         {
           type: "button",
           className: btnGhost,
+          disabled: isProcessing,
           onClick: (e) => {
             e.stopPropagation();
             onRemove();
@@ -64,8 +65,15 @@ function FilePreview({ file, onRemove, onProcess }) {
       ),
       h(
         "button",
-        { type: "button", className: btnPrimary, onClick: onProcess },
-        "Proses Sekarang",
+        {
+          type: "button",
+          className: btnPrimary,
+          onClick: onProcess,
+          disabled: isProcessing,
+        },
+        isProcessing
+          ? h(Fragment, null, h(Loader2, { className: "h-4 w-4 animate-spin" }), "Memproses...")
+          : "Proses Sekarang",
       ),
     ),
   );
@@ -114,7 +122,7 @@ export function UploadArea() {
       "div",
       {
         ...getRootProps(),
-        className: `relative cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all ${dropzoneClass} ${isProcessing ? "pointer-events-none opacity-60" : ""}`,
+        className: `relative cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all ${dropzoneClass} ${isProcessing ? "pointer-events-none opacity-80" : ""}`,
       },
       h("input", getInputProps()),
       h(
@@ -144,10 +152,11 @@ export function UploadArea() {
       ),
     ),
     currentFile &&
-      !isProcessing &&
       h(FilePreview, {
         file: currentFile,
+        isProcessing,
         onRemove: () => {
+          if (isProcessing) return;
           clearFile();
           resetResults();
         },

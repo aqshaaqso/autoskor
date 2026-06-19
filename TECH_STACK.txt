@@ -1,0 +1,304 @@
+================================================================================
+                    TECH STACK — AUTOSKOR
+         Penjelasan Teknologi, Alasan Pemilihan, dan Kegunaan
+================================================================================
+
+GAMBARAN BESAR
+--------------
+AutoSkor adalah Single Page Application (SPA) frontend. Alur kerja:
+
+  User upload dokumen RAT
+       → Frontend kirim ke backend
+       → Backend ekstrak data & hitung skor
+       → Frontend tampilkan hasil
+
+Diagram arsitektur:
+
+  Browser (React)  →  Axios  →  Backend API (belum terhubung production)
+       ↑                              ↓
+    Zustand (state)            JSON hasil penilaian
+    Tailwind (UI)
+
+Catatan: Tidak ada backend di repo ini — ini frontend saja, dengan mock mode
+untuk development.
+
+
+================================================================================
+1. JAVASCRIPT (ES2022+) — BAHASA UTAMA
+================================================================================
+
+Apa itu:
+  Bahasa pemrograman yang dijalankan di browser.
+
+Kenapa dipilih:
+  - Requirement proyek: JavaScript murni, tanpa TypeScript
+  - Tidak perlu compile step terpisah untuk type checking
+  - Cukup untuk MVP dashboard dengan logika tidak terlalu kompleks
+
+Kegunaan di AutoSkor:
+  - Semua komponen UI (App.js, UploadArea.js, dll.)
+  - State management (useKoperasiStore.js)
+  - Service API (api.js)
+  - Utility (colorGrading.js)
+
+Catatan penting:
+  UI dirender pakai React.createElement (alias h), BUKAN JSX — sesuai
+  requirement pure JS.
+
+
+================================================================================
+2. REACT 19 — LIBRARY UI
+================================================================================
+
+Apa itu:
+  Library untuk membangun antarmuka berbasis komponen. Setiap bagian UI
+  (upload, tabel, ringkasan skor) adalah komponen terpisah yang bisa di-reuse.
+
+Kenapa dipilih:
+  - Standar industri untuk dashboard interaktif
+  - Component-based — UploadArea, ResultsTable, ScoreSummary terpisah rapi
+  - Declarative — UI otomatis update saat state berubah
+    (contoh: isProcessing true → muncul progress bar)
+  - Ekosistem besar (dropzone, icon, dll.)
+
+Kegunaan di AutoSkor:
+
+  Komponen              | Fungsi
+  ----------------------|--------------------------------------------------
+  App.js                | Layout utama, orchestrasi tampilan
+  UploadArea.js         | Drag & drop upload file
+  ResultsTable.js       | Tabel skor per aspek
+  ScoreSummary.js       | Ringkasan skor parsial & predikat
+  NonProcessAble.js     | Panel aspek Manajemen yang tidak bisa dihitung
+  ProcessingLoader.js   | Progress bar proses async
+
+React DOM:
+  "Jembatan" yang merender React ke HTML di browser.
+
+
+================================================================================
+3. VITE 6 — BUILD TOOL & DEV SERVER
+================================================================================
+
+Apa itu:
+  Tool untuk development (hot reload) dan build production.
+
+Kenapa dipilih (bukan Create React App / Webpack):
+  - Sangat cepat — dev server pakai native ES modules, HMR instan
+  - Setup minimal, config ringkas (vite.config.js ~15 baris)
+  - Default modern untuk proyek React baru
+  - Build output kecil & optimal untuk deploy statis
+
+Kegunaan di AutoSkor:
+  - npm run dev    → dev server di localhost:5173 dengan hot reload
+  - npm run build  → bundle production ke folder dist/
+  - npm run preview → preview build production lokal
+  - Path alias @/  → src/ (import lebih bersih)
+
+
+================================================================================
+4. TAILWIND CSS 4 — STYLING
+================================================================================
+
+Apa itu:
+  Framework CSS utility-first. Styling langsung di className, misalnya:
+  rounded-xl border bg-white p-6
+
+Kenapa dipilih (bukan CSS biasa / Bootstrap / Material UI):
+  - Cepat untuk MVP — tidak perlu file CSS terpisah per komponen
+  - Konsisten — spacing, warna, typography seragam
+  - Responsive mudah (sm:, lg:)
+  - Tidak perlu library komponen berat — cukup untuk dashboard admin
+
+Kegunaan di AutoSkor:
+  - Layout header, upload area, tabel hasil
+  - Color grading visual: Hijau/Kuning/Merah via class
+    bg-success-*, bg-warning-*, bg-danger-*
+  - Custom theme di index.css (warna primary, success, warning, danger)
+  - Integrasi via @tailwindcss/vite plugin
+
+
+================================================================================
+5. ZUSTAND 5 — STATE MANAGEMENT
+================================================================================
+
+Apa itu:
+  Library state global yang ringan. Semua komponen bisa akses data yang sama
+  tanpa prop drilling.
+
+Kenapa dipilih (bukan Redux / Context API saja):
+  - Minimal boilerplate — satu file useKoperasiStore.js cukup
+  - API sederhana, mirip useState tapi global
+  - Redux terlalu berat untuk state sekecil ini
+  - Context API saja bisa, tapi re-render lebih sulit dikontrol
+
+State yang dikelola:
+
+  State                | Isi
+  ---------------------|------------------------------------------
+  currentFile          | File PDF yang dipilih user
+  isProcessing         | Sedang proses atau tidak
+  processingStep       | Tahap proses ("Mengekstrak data...")
+  processingProgress   | Progress 0–100%
+  results              | Hasil penilaian dari backend
+  error                | Pesan error
+
+Actions:
+  - setFile(file)     → Set file yang dipilih
+  - clearFile()       → Hapus file terpilih
+  - processFile()     → Kirim file ke backend / mock (async)
+  - resetResults()    → Reset hasil penilaian
+
+
+================================================================================
+6. AXIOS — HTTP CLIENT
+================================================================================
+
+Apa itu:
+  Library untuk komunikasi HTTP ke backend API.
+
+Kenapa dipilih (bukan fetch native):
+  - API lebih ergonomis — api.post(), error handling, timeout
+  - onUploadProgress — track progress upload file (penting untuk UX async)
+  - Timeout configurable (120 detik — proses PDF/OCR bisa lama)
+  - Interceptor bisa ditambah nanti (auth token, dll.)
+
+Kegunaan di AutoSkor:
+
+  POST /penilaian/process
+  Content-Type: multipart/form-data
+  Body: file (PDF RAT)
+
+  - Mock mode: simulasi tahap proses tanpa backend
+  - Production: kirim file ke backend, terima JSON hasil skor
+
+
+================================================================================
+7. REACT-DROPZONE — FILE UPLOAD
+================================================================================
+
+Apa itu:
+  Library drag & drop file upload untuk React.
+
+Kenapa dipilih (bukan input <input type="file"> biasa):
+  - Drag & drop UX lebih baik untuk upload dokumen
+  - Validasi built-in: tipe file, max files, multiple on/off
+  - State visual: isDragActive, isDragReject
+  - Hemat waktu — tidak perlu implement sendiri
+
+Kegunaan di AutoSkor:
+  - Terima PDF (dan JPG/PNG/WEBP sebagai fallback)
+  - Single file only (maxFiles: 1)
+  - Disable saat proses berjalan
+
+
+================================================================================
+8. LUCIDE-REACT — ICON SET
+================================================================================
+
+Apa itu:
+  Kumpulan icon SVG sebagai komponen React.
+
+Kenapa dipilih:
+  - Ringan, tree-shakeable (hanya icon yang dipakai yang masuk bundle)
+  - Konsisten secara visual
+  - Tidak perlu gambar/icon file terpisah
+
+Icon yang dipakai:
+  Upload, FileText, X, AlertCircle, Loader2, RotateCcw, Check, AlertTriangle
+
+
+================================================================================
+9. @VITEJS/PLUGIN-REACT — DEV TOOL
+================================================================================
+
+Apa itu:
+  Plugin Vite untuk dukungan React.
+
+Kegunaan:
+  - Fast Refresh — edit komponen, browser update tanpa kehilangan state
+  - Transform file .js dengan React tanpa JSX
+
+
+================================================================================
+YANG SENGAJA TIDAK DIPAKAI
+================================================================================
+
+  Tech                  | Alasan tidak dipakai
+  ----------------------|--------------------------------------------------
+  TypeScript            | Requirement: JavaScript murni
+  JSX                   | Requirement: createElement langsung
+  React Router          | Single page, tidak perlu routing
+  Redux                 | State kecil, Zustand lebih ringan
+  UI library (MUI,      | Tailwind + custom component cukup untuk MVP
+   Ant Design)
+  Next.js               | Tidak perlu SSR/SSG — pure client-side SPA
+  Backend di repo ini   | Frontend terpisah, backend nanti service sendiri
+
+
+================================================================================
+ALUR KERJA STACK (saat user klik "Proses Sekarang")
+================================================================================
+
+  1. UploadArea (React + react-dropzone)
+        ↓ setFile()
+
+  2. Zustand store → currentFile tersimpan
+        ↓ processFile() [async]
+
+  3. Axios POST file ke backend (atau mock)
+        ↓ onProgress callback
+
+  4. Zustand → processingStep & processingProgress update
+        ↓ React re-render
+
+  5. ProcessingProgress (React + Tailwind) tampil progress bar
+        ↓ await selesai
+
+  6. Zustand → results terisi
+        ↓ React re-render
+
+  7. ScoreSummary + ResultsTable + NonProcessAble tampil hasil
+
+
+================================================================================
+VERSI TERINSTALL SAAT INI (npm list --depth=0)
+================================================================================
+
+  Paket                  | Versi Terinstall | Range package.json
+  -----------------------|------------------|-------------------
+  React                  | 19.2.7           | ^19.1.0
+  React DOM              | 19.2.7           | ^19.1.0
+  Vite                   | 6.4.3            | ^6.3.5
+  Tailwind CSS           | 4.3.1            | ^4.1.8
+  @tailwindcss/vite      | 4.3.1            | ^4.1.8
+  Zustand                | 5.0.14           | ^5.0.5
+  Axios                  | 1.18.0           | ^1.9.0
+  react-dropzone         | 14.4.1           | ^14.3.8
+  lucide-react           | 0.511.0          | ^0.511.0
+  @vitejs/plugin-react   | 4.7.0            | ^4.5.1
+
+
+================================================================================
+KALIMAT PEMBUKA UNTUK MENTOR
+================================================================================
+
+"AutoSkor dibangun sebagai SPA dengan React 19 (JavaScript murni, tanpa
+TypeScript/JSX), di-bundle pakai Vite untuk development cepat. Styling pakai
+Tailwind CSS 4 supaya UI konsisten tanpa CSS terpisah. State global dikelola
+Zustand karena ringan dan cukup untuk kebutuhan upload + hasil penilaian.
+Komunikasi ke backend lewat Axios dengan dukungan progress upload. Upload file
+pakai react-dropzone untuk drag & drop, dan icon dari lucide-react. Saat ini
+backend belum terhubung — pakai mock mode untuk development UI."
+
+
+================================================================================
+DOKUMEN TERKAIT
+================================================================================
+
+  - README.md              → Dokumentasi proyek lengkap
+  - fs.txt                 → Struktur folder proyek
+  - tidak bisa dihitung.txt → Aspek Manajemen yang tidak dapat dihitung
+  - .env.example           → Environment variables (VITE_API_BASE_URL, VITE_USE_MOCK)
+
+================================================================================

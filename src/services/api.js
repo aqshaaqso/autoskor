@@ -204,18 +204,45 @@ const mockHasilPenilaian = {
   ],
 }
 
-export async function processDokumen(file) {
+const MOCK_STEPS = [
+  { label: 'Mengunggah dokumen...', delay: 500, progress: 15 },
+  { label: 'Mengekstrak data dari PDF...', delay: 800, progress: 40 },
+  { label: 'Menghitung rasio keuangan...', delay: 900, progress: 70 },
+  { label: 'Menyusun hasil penilaian...', delay: 700, progress: 90 },
+]
+
+async function runMockSteps(onProgress) {
+  for (const step of MOCK_STEPS) {
+    onProgress?.(step.label, step.progress)
+    await new Promise((resolve) => setTimeout(resolve, step.delay))
+  }
+  onProgress?.('Selesai', 100)
+  await new Promise((resolve) => setTimeout(resolve, 300))
+}
+
+export async function processDokumen(file, onProgress) {
   if (USE_MOCK) {
-    await new Promise((resolve) => setTimeout(resolve, 2500))
+    await runMockSteps(onProgress)
     return { ...mockHasilPenilaian }
   }
+
+  onProgress?.('Mengunggah dokumen...', 10)
 
   const formData = new FormData()
   formData.append('file', file)
 
   const { data } = await api.post('/penilaian/process', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (event) => {
+      if (!event.total) return
+      const uploadPercent = Math.round((event.loaded / event.total) * 30)
+      onProgress?.('Mengunggah dokumen...', uploadPercent)
+    },
   })
+
+  onProgress?.('Menyusun hasil penilaian...', 95)
+  await new Promise((resolve) => setTimeout(resolve, 200))
+  onProgress?.('Selesai', 100)
 
   return data
 }

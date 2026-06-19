@@ -1,7 +1,7 @@
 import { createElement as h, Fragment } from "react";
 import { RotateCcw } from "lucide-react";
 import { UploadArea } from "@/components/UploadArea";
-import { ProcessingLoader } from "@/components/ProcessingLoader";
+import { ProcessingProgress } from "@/components/ProcessingLoader";
 import { ResultsTable } from "@/components/ResultsTable";
 import { ScoreSummary } from "@/components/ScoreSummary";
 import { TidakDapatDihitungPanel } from "@/components/NonProcessAble";
@@ -11,7 +11,14 @@ const btnSecondary =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2";
 
 export default function App() {
-  const { isProcessing, results, resetResults, clearFile } = useKoperasiStore();
+  const {
+    isProcessing,
+    processingStep,
+    processingProgress,
+    results,
+    resetResults,
+    clearFile,
+  } = useKoperasiStore();
 
   const handleNewUpload = () => {
     resetResults();
@@ -70,49 +77,68 @@ export default function App() {
           "Unggah dokumen hasil rapat anggota tahunan untuk menghitung skor kesehatan koperasi.",
         ),
       ),
-      isProcessing
-        ? h(ProcessingLoader)
-        : h(
-            Fragment,
-            null,
-            h(UploadArea),
-            results &&
+      h(
+        Fragment,
+        null,
+        h(UploadArea),
+        isProcessing &&
+          h(
+            "div",
+            { className: "mt-6" },
+            h(ProcessingProgress, {
+              step: processingStep,
+              progress: processingProgress,
+            }),
+          ),
+        results &&
+          h(
+            "div",
+            {
+              className: `mt-10 space-y-6 transition-opacity duration-300 ${isProcessing ? "pointer-events-none opacity-40" : "opacity-100"}`,
+            },
+            isProcessing &&
               h(
                 "div",
-                { className: "mt-10 space-y-6" },
-                h(
-                  "div",
-                  { className: "flex items-center justify-between" },
-                  h(
-                    "h2",
-                    { className: "text-xl font-semibold text-slate-800" },
-                    "Hasil Penilaian",
-                  ),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      className: btnSecondary,
-                      onClick: handleNewUpload,
-                    },
-                    h(RotateCcw, { className: "h-4 w-4" }),
-                    "Upload Baru",
-                  ),
-                ),
-                h(ScoreSummary, { results }),
-                h(
-                  "div",
-                  {
-                    className:
-                      "grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start",
-                  },
-                  h(ResultsTable, { detail: results.detail }),
-                  h(TidakDapatDihitungPanel, {
-                    data: results.tidakDapatDihitung,
-                  }),
-                ),
+                {
+                  className:
+                    "rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm text-primary-700",
+                },
+                "Menampilkan hasil sebelumnya — hasil baru akan menggantikan setelah proses selesai.",
               ),
+            h(
+              "div",
+              { className: "flex items-center justify-between" },
+              h(
+                "h2",
+                { className: "text-xl font-semibold text-slate-800" },
+                "Hasil Penilaian",
+              ),
+              !isProcessing &&
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: btnSecondary,
+                    onClick: handleNewUpload,
+                  },
+                  h(RotateCcw, { className: "h-4 w-4" }),
+                  "Upload Baru",
+                ),
+            ),
+            h(ScoreSummary, { results }),
+            h(
+              "div",
+              {
+                className:
+                  "grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start",
+              },
+              h(ResultsTable, { detail: results.detail }),
+              h(TidakDapatDihitungPanel, {
+                data: results.tidakDapatDihitung,
+              }),
+            ),
           ),
+      ),
     ),
   );
 }
