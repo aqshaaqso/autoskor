@@ -8,10 +8,28 @@ const api = axios.create({
   timeout: 120_000,
 })
 
+const mockTidakDapatDihitung = {
+  aspek: 'Manajemen',
+  bobot: 15,
+  skor: 0,
+  flag: 'Tidak Dapat Dihitung - Data Manajemen Tidak Tersedia',
+  catatan:
+    'Penilaian aspek manajemen memerlukan data non-keuangan yang tidak ditemukan dalam dokumen.',
+  komponen: [
+    { nama: 'Manajemen Umum', jumlahPertanyaan: 12 },
+    { nama: 'Kelembagaan', jumlahPertanyaan: 6 },
+    { nama: 'Manajemen Permodalan', jumlahPertanyaan: 5 },
+    { nama: 'Manajemen Aktiva', jumlahPertanyaan: 10 },
+    { nama: 'Manajemen Likuiditas', jumlahPertanyaan: 5 },
+  ],
+}
+
 const mockHasilPenilaian = {
-  totalSkor: 72.45,
-  persentase: 72.45,
+  totalSkorParsial: 64.35,
+  persentaseParsial: 75.7,
+  bobotDapatDihitung: 85,
   predikat: 'CUKUP SEHAT',
+  tidakDapatDihitung: mockTidakDapatDihitung,
   detail: [
     {
       aspek: 'Permodalan',
@@ -80,56 +98,6 @@ const mockHasilPenilaian = {
       nilai: 100,
       bobot: 5,
       skor: 5.0,
-      persentaseMaks: 100,
-      status: 'Hijau',
-    },
-    {
-      aspek: 'Manajemen',
-      komponen: 'Struktur Organisasi',
-      nilaiRasio: 'Ya',
-      nilai: 100,
-      bobot: 3,
-      skor: 3.0,
-      persentaseMaks: 100,
-      status: 'Hijau',
-    },
-    {
-      aspek: 'Manajemen',
-      komponen: 'Sistem Akuntansi',
-      nilaiRasio: 'Ya',
-      nilai: 100,
-      bobot: 3,
-      skor: 3.0,
-      persentaseMaks: 100,
-      status: 'Hijau',
-    },
-    {
-      aspek: 'Manajemen',
-      komponen: 'Sistem Pengendalian Intern',
-      nilaiRasio: 'Ya',
-      nilai: 100,
-      bobot: 3,
-      skor: 3.0,
-      persentaseMaks: 100,
-      status: 'Hijau',
-    },
-    {
-      aspek: 'Manajemen',
-      komponen: 'Pelaksanaan Rapat Anggota',
-      nilaiRasio: 'Tidak',
-      nilai: 0,
-      bobot: 3,
-      skor: 0,
-      persentaseMaks: 0,
-      status: 'Merah',
-    },
-    {
-      aspek: 'Manajemen',
-      komponen: 'Pelaksanaan Audit Eksternal',
-      nilaiRasio: 'Ya',
-      nilai: 100,
-      bobot: 3,
-      skor: 3.0,
       persentaseMaks: 100,
       status: 'Hijau',
     },

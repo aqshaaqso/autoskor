@@ -27,6 +27,13 @@ export function getStatusClasses(status) {
         bg: 'bg-danger-50',
         border: 'border-danger-500/30',
       }
+    case 'Tidak Dapat Dihitung':
+      return {
+        badge: 'bg-slate-100 text-slate-600 border-slate-300',
+        text: 'text-slate-600',
+        bg: 'bg-slate-50',
+        border: 'border-slate-200',
+      }
   }
 }
 

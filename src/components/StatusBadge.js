@@ -8,7 +8,9 @@ export function StatusBadge({ status }) {
       ? 'bg-success-500'
       : status === 'Kuning'
         ? 'bg-warning-500'
-        : 'bg-danger-500'
+        : status === 'Tidak Dapat Dihitung'
+          ? 'bg-slate-400'
+          : 'bg-danger-500'
 
   return h(
     'span',

@@ -1,0 +1,15 @@
+Komponen:
+- Manajemen Umum (12 pertanyaan)
+- Kelembagaan (6 pertanyaan)
+- Manajemen Permodalan (5 pertanyaan)
+- Manajemen Aktiva (10 pertanyaan)
+- Manajemen Likuiditas (5 pertanyaan)
+ 
+Alasan tidak bisa dihitung:
+- Tidak ada informasi tentang kebijakan, prosedur, atau praktik manajemen
+- Laporan keuangan biasanya hanya berisi angka, bukan jawaban pertanyaan manajemen
+ 
+Rekomendasi:
+- Set skor = 0 untuk seluruh aspek Manajemen
+- Flag: "Tidak Dapat Dihitung - Data Manajemen Tidak Tersedia"
+- Catatan: "Penilaian aspek manajemen memerlukan data non-keuangan yang tidak ditemukan dalam dokumen."

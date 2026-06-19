@@ -3,6 +3,7 @@ import { getPredikatClasses, formatSkor } from '@/utils/colorGrading'
 
 export function ScoreSummary({ results }) {
   const predikatClass = getPredikatClasses(results.predikat)
+  const bobotParsial = results.bobotDapatDihitung ?? 85
 
   return h(
     'div',
@@ -18,12 +19,20 @@ export function ScoreSummary({ results }) {
       h(
         'div',
         { className: 'rounded-lg bg-slate-50 p-4 text-center' },
-        h('p', { className: 'text-sm font-medium text-slate-500' }, 'Total Skor'),
+        h(
+          'p',
+          { className: 'text-sm font-medium text-slate-500' },
+          'Skor Parsial (Dapat Dihitung)',
+        ),
         h(
           'p',
           { className: 'mt-1 text-3xl font-bold text-slate-900' },
-          formatSkor(results.totalSkor),
-          h('span', { className: 'text-lg font-normal text-slate-400' }, ' / 100'),
+          formatSkor(results.totalSkorParsial),
+          h(
+            'span',
+            { className: 'text-lg font-normal text-slate-400' },
+            ` / ${bobotParsial}`,
+          ),
         ),
       ),
       h(
@@ -32,12 +41,12 @@ export function ScoreSummary({ results }) {
         h(
           'p',
           { className: 'text-sm font-medium text-slate-500' },
-          'Persentase Keseluruhan',
+          'Persentase Parsial',
         ),
         h(
           'p',
           { className: 'mt-1 text-3xl font-bold text-primary-600' },
-          `${results.persentase.toFixed(1)}%`,
+          `${results.persentaseParsial.toFixed(1)}%`,
         ),
       ),
       h(
@@ -60,5 +69,11 @@ export function ScoreSummary({ results }) {
         ),
       ),
     ),
+    results.tidakDapatDihitung &&
+      h(
+        'p',
+        { className: 'mt-4 text-xs text-slate-500' },
+        `Aspek Manajemen (${results.tidakDapatDihitung.bobot} bobot) tidak dihitung karena data non-keuangan tidak tersedia dalam dokumen.`,
+      ),
   )
 }

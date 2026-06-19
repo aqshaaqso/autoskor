@@ -9,6 +9,7 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 ## Daftar Isi
 
 - [Fitur](#fitur)
+- [Skor Parsial & Aspek Tidak Dapat Dihitung](#skor-parsial--aspek-tidak-dapat-dihitung)
 - [Tech Stack](#tech-stack)
 - [Prasyarat](#prasyarat)
 - [Instalasi & Menjalankan](#instalasi--menjalankan)
@@ -33,11 +34,13 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 | Fitur | Deskripsi |
 |-------|-----------|
 | Single-page layout | Header sederhana + konten utama tanpa sidebar |
-| Upload drag & drop | Single file upload (PDF, JPG, PNG, WEBP) |
+| Upload drag & drop | Single file upload dokumen RAT (PDF, maks. 20 MB) |
 | Preview file | Nama & ukuran file ditampilkan di area upload |
 | Proses async | Tombol "Proses Sekarang" dengan loading non-blocking |
-| Tabel hasil skor | Detail per aspek dan komponen/rasio |
-| Ringkasan skor | Total skor, persentase, dan predikat kesehatan |
+| Tabel hasil skor | Detail per aspek dan komponen/rasio yang **dapat dihitung** |
+| Panel tidak dapat dihitung | Aspek Manajemen ditampilkan terpisah, tidak masuk skor parsial |
+| Skor parsial | Persentase hanya dari 85 bobot yang bisa dihitung dari dokumen |
+| Ringkasan skor | Skor parsial, persentase parsial, dan predikat kesehatan |
 | Color grading | Status Hijau / Kuning / Merah per komponen |
 | Mock mode | Testing UI tanpa backend |
 
@@ -49,6 +52,39 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 - Export hasil (PDF / Excel)
 - Preview PDF yang diupload
 - Profile & autentikasi user
+
+---
+
+## Skor Parsial & Aspek Tidak Dapat Dihitung
+
+Dokumen RAT/laporan keuangan biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan manajemen (kebijakan, prosedur, praktik). Lihat `tidak bisa dihitung.txt` untuk rinciannya.
+
+### Aspek yang tidak dapat dihitung (bobot 15)
+
+| Komponen | Jumlah Pertanyaan |
+|----------|-------------------|
+| Manajemen Umum | 12 |
+| Kelembagaan | 6 |
+| Manajemen Permodalan | 5 |
+| Manajemen Aktiva | 10 |
+| Manajemen Likuiditas | 5 |
+
+### Perilaku UI
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Ringkasan: Skor Parsial 64.35/85  ·  Persentase Parsial 75.7% │
+├──────────────────────────────────────┬──────────────────────────┤
+│  Tabel Hasil (dapat dihitung)        │  Panel Tidak Dapat       │
+│  Permodalan, KAP, Efisiensi, ...     │  Dihitung (Manajemen)    │
+│                                      │  skor = 0, bobot = 15    │
+└──────────────────────────────────────┴──────────────────────────┘
+```
+
+- **`detail`** — hanya baris aspek yang bisa dihitung dari dokumen
+- **`tidakDapatDihitung`** — objek terpisah untuk aspek Manajemen (skor 0, flag & catatan)
+- **`totalSkorParsial` / `persentaseParsial`** — dihitung dari **85 bobot**, bukan 100
+- Predikat kesehatan ditentukan dari persentase parsial
 
 ---
 
@@ -118,10 +154,10 @@ Buka browser di URL yang ditampilkan terminal (biasanya `http://localhost:5173`)
 ### Cara Menggunakan (Mock Mode)
 
 1. Buka halaman utama
-2. Drag & drop file PDF atau gambar ke area upload
+2. Drag & drop dokumen RAT (PDF) ke area upload
 3. Klik **Proses Sekarang**
 4. Tunggu loading (~2.5 detik di mock mode)
-5. Lihat tabel hasil skor dan ringkasan predikat
+5. Lihat ringkasan skor parsial, tabel hasil (kiri), dan panel Manajemen tidak dapat dihitung (kanan)
 
 ---
 
@@ -145,16 +181,17 @@ VITE_USE_MOCK=true
 
 ## Struktur Proyek
 
-Struktur flat sesuai `fs.txt` — semua komponen di satu folder `components/`, tanpa subfolder atau halaman terpisah.
+Struktur flat — semua komponen di satu folder `components/`, tanpa subfolder atau halaman terpisah.
 
 ```
 autoskor/
 ├── public/
 ├── src/
 │   ├── components/
-│   │   ├── UploadArea.js       # upload + preview + tombol aksi
+│   │   ├── UploadArea.js              # upload + preview + tombol aksi
 │   │   ├── ProcessingLoader.js
-│   │   ├── ResultsTable.js     # tabel + ScoreRow inline
+│   │   ├── ResultsTable.js            # tabel + ScoreRow inline
+│   │   ├── NonProcessAble.js          # panel aspek tidak dapat dihitung
 │   │   ├── ScoreSummary.js
 │   │   └── StatusBadge.js
 │   ├── store/
@@ -162,12 +199,13 @@ autoskor/
 │   ├── services/
 │   │   └── api.js
 │   ├── utils/
-│   │   └── colorGrading.js     # grading + formatters
-│   ├── App.js                  # header + layout utama
+│   │   └── colorGrading.js            # grading + formatters
+│   ├── App.js                         # header + layout dua kolom hasil
 │   ├── main.js
 │   └── index.css
 ├── .env.example
 ├── fs.txt
+├── tidak bisa dihitung.txt            # spesifikasi aspek Manajemen
 ├── index.html
 ├── jsconfig.json
 ├── package.json
@@ -226,7 +264,7 @@ export default function App() {
 5. UI menampilkan loading (non-blocking)
 6. Frontend mengirim file ke backend secara async
 7. Backend mengembalikan JSON hasil penilaian
-8. Frontend merender tabel skor + ringkasan predikat
+8. Frontend merender ringkasan skor parsial, tabel hasil, dan panel tidak dapat dihitung
 
 ---
 
@@ -279,13 +317,30 @@ Request timeout diset **120 detik** karena proses ekstraksi PDF/OCR bisa memakan
 
 ## Skema Data Hasil
 
-Backend harus mengembalikan JSON dengan struktur berikut:
+Backend harus mengembalikan JSON dengan struktur berikut. Aspek Manajemen **tidak** dimasukkan ke `detail`, melainkan ke `tidakDapatDihitung`.
 
 ```js
 {
-  totalSkor: 72.45,
-  persentase: 72.45,
+  totalSkorParsial: 64.35,
+  persentaseParsial: 75.7,
+  bobotDapatDihitung: 85,
   predikat: 'CUKUP SEHAT',  // SEHAT | CUKUP SEHAT | KURANG SEHAT | TIDAK SEHAT | SANGAT TIDAK SEHAT
+
+  tidakDapatDihitung: {
+    aspek: 'Manajemen',
+    bobot: 15,
+    skor: 0,
+    flag: 'Tidak Dapat Dihitung - Data Manajemen Tidak Tersedia',
+    catatan: 'Penilaian aspek manajemen memerlukan data non-keuangan yang tidak ditemukan dalam dokumen.',
+    komponen: [
+      { nama: 'Manajemen Umum', jumlahPertanyaan: 12 },
+      { nama: 'Kelembagaan', jumlahPertanyaan: 6 },
+      { nama: 'Manajemen Permodalan', jumlahPertanyaan: 5 },
+      { nama: 'Manajemen Aktiva', jumlahPertanyaan: 10 },
+      { nama: 'Manajemen Likuiditas', jumlahPertanyaan: 5 },
+    ],
+  },
+
   detail: [
     {
       aspek: 'Permodalan',
@@ -297,9 +352,18 @@ Backend harus mengembalikan JSON dengan struktur berikut:
       persentaseMaks: 50,
       status: 'Kuning'         // Hijau | Kuning | Merah
     }
+    // ... hanya aspek yang dapat dihitung dari dokumen
   ]
 }
 ```
+
+| Field | Deskripsi |
+|-------|-----------|
+| `totalSkorParsial` | Total skor dari aspek yang dapat dihitung |
+| `persentaseParsial` | `(totalSkorParsial / bobotDapatDihitung) × 100` |
+| `bobotDapatDihitung` | Bobot maksimal yang bisa dinilai dari dokumen (default 85) |
+| `tidakDapatDihitung` | Data aspek yang tidak bisa dihitung (opsional jika semua aspek tersedia) |
+| `detail` | Baris komponen/rasio yang dapat dihitung saja |
 
 ---
 
@@ -310,22 +374,23 @@ Backend harus mengembalikan JSON dengan struktur berikut:
 | **Hijau** | ≥ 85% dari nilai maksimal komponen |
 | **Kuning** | ≥ 50% dan < 85% |
 | **Merah** | < 50% |
+| **Tidak Dapat Dihitung** | Aspek tidak memiliki data dalam dokumen (khusus panel Manajemen) |
 
 Logika ada di `src/utils/colorGrading.js`.
 
 ### 7 Aspek Penilaian (Permen KUKM No. 14/2009)
 
-| No | Aspek | Bobot |
-|----|-------|-------|
-| 1 | Permodalan | 15 |
-| 2 | Kualitas Aktiva Produktif | 25 |
-| 3 | Manajemen | 15 |
-| 4 | Efisiensi | 10 |
-| 5 | Likuiditas | 15 |
-| 6 | Kemandirian dan Pertumbuhan | 10 |
-| 7 | Jatidiri Koperasi | 10 |
+| No | Aspek | Bobot | Keterangan |
+|----|-------|-------|------------|
+| 1 | Permodalan | 15 | Dapat dihitung dari laporan keuangan |
+| 2 | Kualitas Aktiva Produktif | 25 | Dapat dihitung dari laporan keuangan |
+| 3 | Manajemen | 15 | **Tidak dapat dihitung** dari dokumen RAT saja |
+| 4 | Efisiensi | 10 | Dapat dihitung dari laporan keuangan |
+| 5 | Likuiditas | 15 | Dapat dihitung dari laporan keuangan |
+| 6 | Kemandirian dan Pertumbuhan | 10 | Dapat dihitung dari laporan keuangan |
+| 7 | Jatidiri Koperasi | 10 | Dapat dihitung dari laporan keuangan |
 
-**Total bobot: 100**
+**Total bobot: 100** — skor parsial menggunakan **85 bobot** (tanpa Manajemen).
 
 ---
 
@@ -364,6 +429,8 @@ VITE_USE_MOCK=false
 - [x] Upload area dengan react-dropzone
 - [x] Mock data & tabel hasil
 - [x] Color grading & ringkasan skor
+- [x] Skor parsial (85 bobot, tanpa Manajemen)
+- [x] Panel "Tidak Dapat Dihitung" terpisah dari tabel hasil
 - [ ] Integrasi backend production
 - [ ] Riwayat upload
 - [ ] Daftar koperasi
@@ -382,6 +449,14 @@ VITE_USE_MOCK=false
 | Navigasi | Single-page, header saja | Sidebar + React Router |
 | Helper render | `createElement as h` langsung | Helper `src/utils/h.js` |
 | Halaman | Satu halaman | Dashboard + Riwayat |
+| Skor Manajemen | Panel terpisah, tidak masuk parsial | Semua aspek dalam satu tabel |
+
+---
+
+## Dokumen Terkait
+
+- `tidak bisa dihitung.txt` — Komponen Manajemen yang tidak dapat dihitung dari dokumen RAT
+- `fs.txt` — Struktur folder proyek
 
 ---
 
