@@ -204,46 +204,142 @@ const mockHasilPenilaian = {
   ],
 }
 
-const MOCK_STEPS = [
-  { label: 'Mengunggah dokumen...', delay: 500, progress: 15 },
-  { label: 'Mengekstrak data dari PDF...', delay: 800, progress: 40 },
-  { label: 'Menghitung rasio keuangan...', delay: 900, progress: 70 },
-  { label: 'Menyusun hasil penilaian...', delay: 700, progress: 90 },
-]
+let mockDocuments = []
+let mockNextId = 1
+let mockEngineRunning = false
 
-async function runMockSteps(onProgress) {
-  for (const step of MOCK_STEPS) {
-    onProgress?.(step.label, step.progress)
-    await new Promise((resolve) => setTimeout(resolve, step.delay))
-  }
-  onProgress?.('Selesai', 100)
-  await new Promise((resolve) => setTimeout(resolve, 300))
+const MOCK_PROCESSING_MS = 5000
+
+function getNextQueuedDocument() {
+  const queued = mockDocuments
+    .filter((doc) => doc.status === 'queued')
+    .sort((a, b) => {
+      const idA = Number.parseInt(a.id.replace('doc-', ''), 10)
+      const idB = Number.parseInt(b.id.replace('doc-', ''), 10)
+      return idA - idB
+    })
+
+  return queued[0] ?? null
 }
 
-export async function processDokumen(file, onProgress) {
+async function processMockQueue() {
+  if (mockEngineRunning) return
+  mockEngineRunning = true
+
+  try {
+    let next = getNextQueuedDocument()
+
+    while (next) {
+      next.status = 'processing'
+      await new Promise((resolve) => setTimeout(resolve, MOCK_PROCESSING_MS))
+      next.status = 'done'
+      next = getNextQueuedDocument()
+    }
+  } finally {
+    mockEngineRunning = false
+
+    if (getNextQueuedDocument()) {
+      void processMockQueue()
+    }
+  }
+}
+
+function kickMockEngine() {
+  void processMockQueue()
+}
+
+function sortQueueDocuments(documents) {
+  const rank = { processing: 0, queued: 1 }
+
+  return [...documents].sort((a, b) => {
+    const rankDiff = (rank[a.status] ?? 2) - (rank[b.status] ?? 2)
+    if (rankDiff !== 0) return rankDiff
+
+    const idA = Number.parseInt(a.id.replace('doc-', ''), 10)
+    const idB = Number.parseInt(b.id.replace('doc-', ''), 10)
+    return idA - idB
+  })
+}
+
+async function simulateUploadProgress(onProgress) {
+  const steps = [10, 25, 45, 65, 85, 100]
+  for (const progress of steps) {
+    onProgress?.(progress)
+    await new Promise((resolve) => setTimeout(resolve, 180))
+  }
+}
+
+function createMockDocument(file) {
+  const doc = {
+    id: `doc-${mockNextId++}`,
+    fileName: file.name,
+    fileSize: file.size,
+    status: 'queued',
+    uploadedAt: new Date().toISOString(),
+  }
+  mockDocuments.push(doc)
+  return doc
+}
+
+export async function uploadDocuments(files, onProgress) {
   if (USE_MOCK) {
-    await runMockSteps(onProgress)
-    return { ...mockHasilPenilaian }
+    await simulateUploadProgress(onProgress)
+    const documents = files.map((file) => createMockDocument(file))
+    kickMockEngine()
+    return { documents, message: 'Dokumen berhasil diupload' }
   }
 
-  onProgress?.('Mengunggah dokumen...', 10)
-
   const formData = new FormData()
-  formData.append('file', file)
+  files.forEach((file) => formData.append('files', file))
 
-  const { data } = await api.post('/penilaian/process', formData, {
+  const { data } = await api.post('/documents/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (event) => {
       if (!event.total) return
-      const uploadPercent = Math.round((event.loaded / event.total) * 30)
-      onProgress?.('Mengunggah dokumen...', uploadPercent)
+      const progress = Math.round((event.loaded / event.total) * 100)
+      onProgress?.(progress)
     },
   })
 
-  onProgress?.('Menyusun hasil penilaian...', 95)
-  await new Promise((resolve) => setTimeout(resolve, 200))
-  onProgress?.('Selesai', 100)
+  return data
+}
 
+export async function getDocuments(status) {
+  if (USE_MOCK) {
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    if (status === 'queue') {
+      const queue = mockDocuments.filter(
+        (doc) => doc.status === 'queued' || doc.status === 'processing',
+      )
+      return sortQueueDocuments(queue)
+    }
+
+    if (status === 'done') {
+      return mockDocuments.filter((doc) => doc.status === 'done')
+    }
+
+    return mockDocuments
+  }
+
+  const { data } = await api.get('/documents', { params: { status } })
+  return data
+}
+
+export async function getDocumentResults(id) {
+  if (USE_MOCK) {
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    const doc = mockDocuments.find((item) => item.id === id)
+    if (!doc || doc.status !== 'done') {
+      throw new Error('Hasil penilaian belum tersedia untuk dokumen ini.')
+    }
+    return {
+      document: doc,
+      results: { ...mockHasilPenilaian },
+    }
+  }
+
+  const { data } = await api.get(`/documents/${id}/results`)
   return data
 }
 

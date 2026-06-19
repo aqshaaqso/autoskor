@@ -1,10 +1,24 @@
 src/
 ├── components/
+│   ├── layout/
+│   │   ├── Sidebar.js
+│   │   ├── SidebarMenuItem.js
+│   │   └── MainLayout.js
 │   ├── UploadArea.js
-│   ├── ProcessingLoader.js
+│   ├── UploadProgress.js
+│   ├── DocumentTable.js
+│   ├── DocumentStatusBadge.js
+│   ├── DocumentWatcher.js
+│   ├── Toast.js
 │   ├── ResultsTable.js
 │   ├── ScoreSummary.js
-│   └── StatusBadge.js
+│   ├── StatusBadge.js
+│   └── NonProcessAble.js
+├── pages/
+│   ├── UploadPage.js
+│   ├── QueuePage.js
+│   ├── ProcessedPage.js
+│   └── ProcessedDetailPage.js
 ├── store/
 │   └── useKoperasiStore.js
 ├── services/

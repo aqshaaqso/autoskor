@@ -60,3 +60,42 @@ export function formatFileSize(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+export function formatDateTime(value) {
+  return new Intl.DateTimeFormat('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+export const MAX_TOTAL_UPLOAD_BYTES = 20 * 1024 * 1024
+
+export function getDocumentStatusLabel(status) {
+  switch (status) {
+    case 'queued':
+      return 'Menunggu'
+    case 'processing':
+      return 'Sedang Diproses'
+    case 'done':
+      return 'Selesai'
+    case 'failed':
+      return 'Gagal'
+    default:
+      return status
+  }
+}
+
+export function getDocumentStatusClasses(status) {
+  switch (status) {
+    case 'queued':
+      return 'bg-warning-100 text-warning-700 border-warning-500/30'
+    case 'processing':
+      return 'bg-primary-100 text-primary-700 border-primary-500/30'
+    case 'done':
+      return 'bg-success-100 text-success-700 border-success-500/30'
+    case 'failed':
+      return 'bg-danger-100 text-danger-700 border-danger-500/30'
+    default:
+      return 'bg-slate-100 text-slate-600 border-slate-300'
+  }
+}
