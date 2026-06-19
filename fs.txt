@@ -1,0 +1,15 @@
+src/
+├── components/
+│   ├── UploadArea.js
+│   ├── ProcessingLoader.js
+│   ├── ResultsTable.js
+│   ├── ScoreSummary.js
+│   └── StatusBadge.js
+├── store/
+│   └── useKoperasiStore.js
+├── services/
+│   └── api.js
+├── utils/
+│   └── colorGrading.js
+├── App.js
+└── main.js
