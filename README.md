@@ -82,7 +82,7 @@ Frontend **hanya** upload & monitoring — proses hitung skor dilakukan oleh **b
 
 ## Skor Parsial & Aspek Tidak Dapat Dihitung
 
-Dokumen RAT biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan manajemen. Lihat `tidak bisa dihitung.txt`.
+Dokumen RAT biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan manajemen. Lihat [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md).
 
 ### Aspek yang tidak dapat dihitung (bobot 15)
 
@@ -223,10 +223,11 @@ autoskor/
 │   ├── App.js
 │   ├── main.js
 │   └── index.css
-├── ARSITEKTUR.txt
-├── TECH_STACK.txt
-├── tidak bisa dihitung.txt
-├── fs.txt
+├── API_CONTRACT.md
+├── ARSITEKTUR.md
+├── TECH_STACK.md
+├── TIDAK_DAPAT_DIHITUNG.md
+├── STRUKTUR_PROYEK.md
 ├── .env.example
 ├── index.html
 ├── package.json
@@ -284,7 +285,7 @@ Upload → queued → processing → done
 | **Backend** | Terima file, kelola antrian & status |
 | **Engine** | OCR, ekstrak data, hitung skor |
 
-Detail lengkap: `ARSITEKTUR.txt`
+Detail lengkap: [ARSITEKTUR.md](./ARSITEKTUR.md)
 
 ---
 
@@ -313,6 +314,8 @@ State global di `src/store/useKoperasiStore.js` (Zustand).
 ---
 
 ## Integrasi Backend
+
+> Kontrak API lengkap untuk tim backend: [API_CONTRACT.md](./API_CONTRACT.md)
 
 ### Endpoint
 
@@ -432,10 +435,11 @@ Deploy folder `dist/` ke hosting statis (Vercel, Netlify, Nginx, dll.).
 
 ## Dokumen Terkait
 
-- `ARSITEKTUR.txt` — Diagram arsitektur & alur sistem
-- `TECH_STACK.txt` — Penjelasan teknologi lengkap
-- `tidak bisa dihitung.txt` — Aspek Manajemen tidak dapat dihitung
-- `fs.txt` — Struktur folder proyek
+- [API_CONTRACT.md](./API_CONTRACT.md) — Kontrak API untuk tim backend
+- [ARSITEKTUR.md](./ARSITEKTUR.md) — Diagram arsitektur & alur sistem
+- [TECH_STACK.md](./TECH_STACK.md) — Penjelasan teknologi lengkap
+- [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) — Aspek Manajemen tidak dapat dihitung
+- [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md) — Struktur folder proyek
 
 ---
 
