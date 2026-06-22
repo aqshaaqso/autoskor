@@ -1,5 +1,8 @@
 import { api } from '@/shared/api/client'
-import { SCORING_JOBS_LIST_LIMIT } from './constants'
+import {
+  SCORING_JOBS_LIST_LIMIT,
+  UI_FILTER_TO_MIDDLEWARE_STATUS,
+} from './constants'
 import {
   filterDocumentsByStatus,
   mapScoringJobToDocument,
@@ -19,12 +22,21 @@ function extractJob(payload) {
   return payload
 }
 
-export async function fetchScoringJobs(options = {}) {
-  const { offset = 0, limit = SCORING_JOBS_LIST_LIMIT } = options
+function getMiddlewareStatusQuery(status) {
+  if (!status) return undefined
+  return UI_FILTER_TO_MIDDLEWARE_STATUS[status]
+}
 
-  const { data } = await api.get('/scoring-jobs', {
-    params: { offset, limit },
-  })
+export async function fetchScoringJobs(options = {}) {
+  const { offset = 0, limit = SCORING_JOBS_LIST_LIMIT, status } = options
+  const middlewareStatus = getMiddlewareStatusQuery(status)
+
+  const params = { offset, limit }
+  if (middlewareStatus) {
+    params.status = middlewareStatus
+  }
+
+  const { data } = await api.get('/scoring-jobs', { params })
 
   const jobs = extractJobList(data)
   const documents = jobs.map(mapScoringJobToDocument)
@@ -40,6 +52,13 @@ export async function fetchScoringJobs(options = {}) {
 }
 
 export async function fetchScoringJobsByStatus(status) {
+  const middlewareStatus = getMiddlewareStatusQuery(status)
+
+  if (middlewareStatus) {
+    const { documents } = await fetchScoringJobs({ status })
+    return documents
+  }
+
   const { documents } = await fetchScoringJobs()
   return filterDocumentsByStatus(documents, status)
 }
@@ -67,12 +86,13 @@ export async function uploadScoringJobFile(file, onProgress) {
     },
   })
 
-  const job = extractJob(data)
-  const jobs = Array.isArray(job) ? job : job ? [job] : []
+  const jobs = extractJobList(data)
+  const singleJob = extractJob(data)
+  const normalizedJobs = jobs.length > 0 ? jobs : singleJob ? [singleJob] : []
 
   return {
-    documents: jobs.map(mapScoringJobToDocument),
-    message: 'Dokumen berhasil diupload',
+    documents: normalizedJobs.map(mapScoringJobToDocument),
+    message: data?.message ?? 'Dokumen berhasil diupload',
     raw: data,
   }
 }

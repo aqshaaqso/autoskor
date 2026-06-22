@@ -1,19 +1,12 @@
+import {
+  JOB_STATUS_TO_UI,
+  UI_STATUS_FILTER_TO_MIDDLEWARE,
+} from '@/shared/api/middlewareContract'
+
 export const SCORING_JOBS_LIST_LIMIT = Number(
-  import.meta.env.VITE_SCORING_JOBS_LIST_LIMIT ?? 200,
+  import.meta.env.VITE_SCORING_JOBS_LIST_LIMIT ?? 100,
 )
 
-export const MIDDLEWARE_STATUS_TO_UI = {
-  uploading: 'queued',
-  waiting: 'queued',
-  pending: 'queued',
-  queued: 'queued',
-  processing: 'processing',
-  running: 'processing',
-  completed: 'done',
-  success: 'done',
-  done: 'done',
-  failed: 'failed',
-  error: 'failed',
-  cancelled: 'failed',
-  canceled: 'failed',
-}
+export const MIDDLEWARE_STATUS_TO_UI = JOB_STATUS_TO_UI
+
+export const UI_FILTER_TO_MIDDLEWARE_STATUS = UI_STATUS_FILTER_TO_MIDDLEWARE
