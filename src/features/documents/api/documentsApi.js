@@ -1,4 +1,4 @@
-import { USE_MOCK } from '@/shared/api/config'
+import { USE_MOCK_DOCUMENTS } from '@/shared/api/config'
 import {
   fetchScoringJobsByStatus,
   fetchScoringJobResult,
@@ -16,7 +16,7 @@ import {
 export { filterQueueDocuments, filterFailedDocuments, filterProcessedDocuments }
 
 export async function uploadDocument(file, onProgress) {
-  if (USE_MOCK) {
+  if (USE_MOCK_DOCUMENTS) {
     return mockUploadDocument(file, onProgress)
   }
 
@@ -24,7 +24,7 @@ export async function uploadDocument(file, onProgress) {
 }
 
 export async function getDocuments(status) {
-  if (USE_MOCK) {
+  if (USE_MOCK_DOCUMENTS) {
     return mockGetDocuments(status)
   }
 
@@ -32,7 +32,7 @@ export async function getDocuments(status) {
 }
 
 export async function getDocumentResults(id) {
-  if (USE_MOCK) {
+  if (USE_MOCK_DOCUMENTS) {
     return mockGetDocumentResults(id)
   }
 

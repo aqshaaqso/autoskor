@@ -1,5 +1,5 @@
 import { api } from '@/shared/api/client'
-import { USE_MOCK } from '@/shared/api/config'
+import { USE_MOCK_AUTH } from '@/shared/api/config'
 import {
   mockLogin,
   mockGetCurrentUser,
@@ -7,7 +7,7 @@ import {
 } from '@/shared/api/mock/authMock'
 
 export async function login(email, password) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     return mockLogin(email, password)
   }
 
@@ -16,7 +16,7 @@ export async function login(email, password) {
 }
 
 export async function getCurrentUser() {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     return mockGetCurrentUser()
   }
 
@@ -25,7 +25,7 @@ export async function getCurrentUser() {
 }
 
 export async function logout() {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     return mockLogout()
   }
 
