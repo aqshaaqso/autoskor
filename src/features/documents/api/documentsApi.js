@@ -1,5 +1,9 @@
-import { api } from '@/shared/api/client'
 import { USE_MOCK } from '@/shared/api/config'
+import {
+  fetchScoringJobsByStatus,
+  fetchScoringJobResult,
+  uploadScoringJobFile,
+} from '@/shared/api/scoringJobs/scoringJobsApi'
 import {
   mockUploadDocument,
   mockGetDocuments,
@@ -16,19 +20,7 @@ export async function uploadDocument(file, onProgress) {
     return mockUploadDocument(file, onProgress)
   }
 
-  const formData = new FormData()
-  formData.append('files', file)
-
-  const { data } = await api.post('/documents/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: (event) => {
-      if (!event.total) return
-      const progress = Math.round((event.loaded / event.total) * 100)
-      onProgress?.(progress)
-    },
-  })
-
-  return data
+  return uploadScoringJobFile(file, onProgress)
 }
 
 export async function getDocuments(status) {
@@ -36,8 +28,7 @@ export async function getDocuments(status) {
     return mockGetDocuments(status)
   }
 
-  const { data } = await api.get('/documents', { params: { status } })
-  return data
+  return fetchScoringJobsByStatus(status)
 }
 
 export async function getDocumentResults(id) {
@@ -45,6 +36,5 @@ export async function getDocumentResults(id) {
     return mockGetDocumentResults(id)
   }
 
-  const { data } = await api.get(`/documents/${id}/results`)
-  return data
+  return fetchScoringJobResult(id)
 }
