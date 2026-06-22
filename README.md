@@ -12,6 +12,9 @@ Frontend **hanya** upload & monitoring — proses hitung skor dilakukan oleh **b
 
 - [Fitur](#fitur)
 - [Halaman & Routing](#halaman--routing)
+- [Autentikasi](#autentikasi)
+- [Upload & Antrian Dokumen](#upload--antrian-dokumen)
+- [Engine & Worker](#engine--worker)
 - [Skor Parsial & Aspek Tidak Dapat Dihitung](#skor-parsial--aspek-tidak-dapat-dihitung)
 - [Tech Stack](#tech-stack)
 - [Prasyarat](#prasyarat)
@@ -36,47 +39,138 @@ Frontend **hanya** upload & monitoring — proses hitung skor dilakukan oleh **b
 
 | Fitur | Deskripsi |
 |-------|-----------|
-| Sidebar + routing | 3 halaman: Upload, Antrian, Selesai |
-| Upload multi-file | Drag & drop banyak file, **total maks. 20 MB** |
-| Progress upload | Progress bar hanya saat upload ke backend |
-| Toast notifikasi | Popup sukses upload & dokumen selesai diproses |
-| Halaman antrian | List dokumen `Menunggu` / `Sedang Diproses`, auto-refresh |
-| Proses FIFO | Engine mock memproses dokumen **satu per satu** |
-| Halaman selesai | List dokumen selesai + detail hasil skor |
-| Skor parsial | Persentase dari 85 bobot (tanpa Manajemen) |
-| Panel tidak dapat dihitung | Aspek Manajemen terpisah, skor = 0 |
-| Color grading | Status Hijau / Kuning / Merah per komponen |
-| Mock mode | Testing UI tanpa backend nyata |
+| **Login wajib** | Dashboard hanya bisa diakses setelah login |
+| **Role admin & operator** | Dua peran user dengan hak akses berbeda |
+| **User menu** | Dropdown profile di sidebar (nama, email, role, logout) |
+| **Sidebar + routing** | Upload, Antrian, Selesai (+ Engine untuk admin) |
+| **Upload async** | Antrian upload di background — bisa tambah file sambil upload jalan |
+| **Upload per file** | Satu request per file, berurutan (bukan batch sekaligus) |
+| **Validasi file** | Hanya **PDF & DOCX**, maksimal **20 MB per file** |
+| **Progress upload** | Progress bar per file + info antrian upload |
+| **Polling on-demand** | Cek status dokumen hanya saat ada antrian aktif |
+| **Toast notifikasi** | Popup sukses upload & dokumen selesai diproses |
+| **Halaman antrian** | List dokumen `Menunggu` / `Sedang Diproses` + kolom worker |
+| **Multi-worker mock** | 3 worker proses dokumen paralel dari satu antrian FIFO |
+| **Engine dashboard** | Monitor cluster worker (admin only) |
+| **Halaman selesai** | List dokumen selesai + detail hasil skor |
+| **Skor parsial** | Persentase dari 85 bobot (tanpa Manajemen) |
+| **Panel tidak dapat dihitung** | Aspek Manajemen terpisah, skor = 0 |
+| **Color grading** | Status Hijau / Kuning / Merah per komponen |
+| **Mock mode** | Testing UI tanpa backend nyata |
+| **Struktur modular** | Feature-based folders (`features/` + `shared/`) |
 
 ### Phase 2 (Belum Tersedia)
 
 - Daftar koperasi
 - Filter & search dokumen
 - Export hasil (PDF / Excel)
-- Preview PDF yang diupload
-- Autentikasi user
+- Preview dokumen yang diupload
+- Halaman profile & edit akun
+- Integrasi backend production (auth + engine nyata)
 
 ---
 
 ## Halaman & Routing
 
-| Route | Halaman | Fungsi |
-|-------|---------|--------|
-| `/upload` | Upload | Pilih & upload dokumen RAT |
-| `/queue` | Antrian | Dokumen menunggu / sedang diproses |
-| `/processed` | Selesai | Daftar dokumen yang sudah jadi |
-| `/processed/:id` | Detail Hasil | Tabel skor + ringkasan parsial |
+| Route | Halaman | Akses | Fungsi |
+|-------|---------|-------|--------|
+| `/login` | Login | Publik | Masuk ke aplikasi |
+| `/upload` | Upload | Auth | Pilih & upload dokumen RAT |
+| `/queue` | Antrian | Auth | Dokumen menunggu / sedang diproses |
+| `/processed` | Selesai | Auth | Daftar dokumen yang sudah jadi |
+| `/processed/:id` | Detail Hasil | Auth | Tabel skor + ringkasan parsial |
+| `/engine` | Engine Dashboard | **Admin** | Monitor cluster worker |
 
 ```
 ┌──────────────┬──────────────────────────────────┐
 │  SIDEBAR     │  Konten halaman aktif (Outlet)   │
 │              │                                  │
+│  👤 Profile  │  /login     → LoginPage          │
 │  ● Upload    │  /upload    → UploadPage         │
 │    Antrian   │  /queue     → QueuePage          │
 │    Selesai   │  /processed → ProcessedPage      │
-│              │  /processed/:id → Detail skor    │
+│    Engine*   │  /processed/:id → Detail skor    │
+│              │  /engine    → EngineDashboard    │
 └──────────────┴──────────────────────────────────┘
+  * menu Engine hanya tampil untuk role admin
 ```
+
+---
+
+## Autentikasi
+
+### Route guard
+
+- `ProtectedRoute` — semua halaman dashboard butuh login
+- `AdminRoute` — halaman `/engine` hanya untuk role `admin`
+- Token disimpan di `localStorage`, dikirim otomatis via Axios interceptor
+
+### Akun demo (mock mode)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@koperasi.id` | `admin123` |
+| Operator | `operator@koperasi.id` | `user123` |
+
+Operator bisa upload & pantau dokumen, tetapi **tidak** melihat menu Engine.
+
+---
+
+## Upload & Antrian Dokumen
+
+### Aturan upload
+
+| Aturan | Nilai |
+|--------|-------|
+| Format file | PDF, DOCX |
+| Ukuran maksimal | **20 MB per file** |
+| Cara upload | Satu file per request HTTP, berurutan |
+| UX | Konfirmasi upload → masuk antrian background → user bisa pilih file lagi |
+
+### Alur upload
+
+```
+Pilih file → Konfirmasi Upload → Antrian upload (background)
+                                      ↓
+                              Upload file 1 → 2 → 3 ...
+                                      ↓
+                              Dokumen masuk antrian backend (queued)
+```
+
+### Polling status dokumen
+
+| Kondisi | Perilaku |
+|---------|----------|
+| Tidak ada dokumen pending | Cek status **1x**, lalu berhenti |
+| Ada dokumen `queued` / `processing` | Polling tiap **3 detik** |
+| Semua selesai | Polling berhenti otomatis |
+
+Polling dijalankan oleh `DocumentWatcher` di semua halaman dashboard.
+
+---
+
+## Engine & Worker
+
+### Model worker pool (mock)
+
+```
+Antrian dokumen (queued)
+        │
+        ├── Worker 1 → processing
+        ├── Worker 2 → processing
+        └── Worker 3 → processing
+```
+
+- Satu antrian FIFO, **3 worker** paralel (mock)
+- Dokumen berstatus `processing` memiliki field `workerId`
+- Engine dashboard menampilkan status cluster + tabel worker (collapsible)
+
+### Engine dashboard (admin)
+
+- Status cluster: Siaga / Menunggu Antrian / Sedang Berjalan
+- Statistik: antrian, sedang diproses, selesai hari ini, total selesai
+- Tabel worker di bagian bawah (bisa dibuka/tutup)
+- Polling on-demand saat engine aktif atau masih ada antrian
 
 ---
 
@@ -109,39 +203,29 @@ Dokumen RAT biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan 
 
 ## Tech Stack
 
-> Versi di bawah adalah versi **terinstall** (`npm list --depth=0`).
-
 ### Core
 
-| Teknologi | Versi Terinstall | Range `package.json` | Peran |
-|-----------|------------------|----------------------|-------|
-| [React](https://react.dev/) | **19.2.7** | `^19.1.0` | Library UI |
-| [React DOM](https://react.dev/) | **19.2.7** | `^19.1.0` | React renderer |
-| [React Router DOM](https://reactrouter.com/) | **7.6.2** | `^7.6.2` | Routing & navigasi |
-| [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) | ES2022+ | — | Bahasa pemrograman |
-| [Vite](https://vite.dev/) | **6.4.3** | `^6.3.5` | Dev server & build |
+| Teknologi | Versi | Peran |
+|-----------|-------|-------|
+| [React](https://react.dev/) | 19.x | Library UI |
+| [React Router DOM](https://reactrouter.com/) | 7.x | Routing, route guard |
+| [Vite](https://vite.dev/) | 6.x | Dev server & build |
+| JavaScript (ES2022+) | — | Bahasa pemrograman |
 
 ### Styling & UI
 
-| Teknologi | Versi Terinstall | Range `package.json` | Peran |
-|-----------|------------------|----------------------|-------|
-| [Tailwind CSS](https://tailwindcss.com/) | **4.3.1** | `^4.1.8` | Utility-first styling |
-| [@tailwindcss/vite](https://tailwindcss.com/docs/installation/using-vite) | **4.3.1** | `^4.1.8` | Integrasi Tailwind + Vite |
-| [lucide-react](https://lucide.dev/) | **0.511.0** | `^0.511.0` | Icon set |
+| Teknologi | Versi | Peran |
+|-----------|-------|-------|
+| [Tailwind CSS](https://tailwindcss.com/) | 4.x | Utility-first styling |
+| [lucide-react](https://lucide.dev/) | 0.511.x | Icon set |
 
 ### State, Upload & HTTP
 
-| Teknologi | Versi Terinstall | Range `package.json` | Peran |
-|-----------|------------------|----------------------|-------|
-| [Zustand](https://zustand.docs.pmnd.rs/) | **5.0.14** | `^5.0.5` | Global state management |
-| [react-dropzone](https://react-dropzone.js.org/) | **14.4.1** | `^14.3.8` | Multi-file drag & drop |
-| [Axios](https://axios-http.com/) | **1.18.0** | `^1.9.0` | HTTP client ke backend |
-
-### Dev Tools
-
-| Teknologi | Versi Terinstall | Range `package.json` | Peran |
-|-----------|------------------|----------------------|-------|
-| [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react) | **4.7.0** | `^4.5.1` | Fast Refresh & dukungan React |
+| Teknologi | Versi | Peran |
+|-----------|-------|-------|
+| [Zustand](https://zustand.docs.pmnd.rs/) | 5.x | State management (multi-store) |
+| [react-dropzone](https://react-dropzone.js.org/) | 14.x | Drag & drop upload |
+| [Axios](https://axios-http.com/) | 1.x | HTTP client + auth interceptor |
 
 ---
 
@@ -162,15 +246,18 @@ copy .env.example .env        # Windows
 npm run dev
 ```
 
-Buka `http://localhost:5173` — otomatis redirect ke `/upload`.
+Buka `http://localhost:5173` — redirect ke `/login`.
 
 ### Cara Menggunakan (Mock Mode)
 
-1. Buka halaman **Upload** → drag & drop satu atau beberapa PDF (total ≤ 20 MB)
-2. Klik **Upload Dokumen** → lihat progress upload → toast *"Dokumen berhasil diupload"*
-3. Buka **Antrian** → dokumen muncul (`Menunggu` → `Sedang Diproses`, satu per satu)
-4. Saat selesai → popup notifikasi muncul di semua halaman + link **Lihat Hasil**
-5. Buka **Selesai** → klik dokumen → lihat skor parsial & tabel hasil
+1. Login dengan akun demo (admin atau operator)
+2. Buka **Upload** → drag & drop file PDF/DOCX (maks. 20 MB per file)
+3. Klik **Konfirmasi Upload** → file masuk antrian upload background
+4. (Opsional) Tambah file baru sambil upload masih berjalan
+5. Buka **Antrian** → dokumen muncul (`Menunggu` → `Sedang Diproses`)
+6. Saat selesai → toast notifikasi + dokumen pindah ke **Selesai**
+7. Klik dokumen di **Selesai** → lihat skor parsial & tabel hasil
+8. (Admin) Buka **Engine** → pantau worker & status cluster
 
 ---
 
@@ -190,37 +277,51 @@ VITE_USE_MOCK=true
 
 ## Struktur Proyek
 
+Struktur **modular berbasis fitur**:
+
 ```
 autoskor/
 ├── public/
 ├── src/
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Sidebar.js
-│   │   │   ├── SidebarMenuItem.js
-│   │   │   └── MainLayout.js
-│   │   ├── UploadArea.js
-│   │   ├── UploadProgress.js
-│   │   ├── DocumentTable.js
-│   │   ├── DocumentStatusBadge.js
-│   │   ├── DocumentWatcher.js      # polling + notif selesai
-│   │   ├── Toast.js
-│   │   ├── ResultsTable.js
-│   │   ├── ScoreSummary.js
-│   │   ├── StatusBadge.js
-│   │   └── NonProcessAble.js
-│   ├── pages/
-│   │   ├── UploadPage.js
-│   │   ├── QueuePage.js
-│   │   ├── ProcessedPage.js
-│   │   └── ProcessedDetailPage.js
-│   ├── store/
-│   │   └── useKoperasiStore.js
-│   ├── services/
-│   │   └── api.js
-│   ├── utils/
-│   │   └── colorGrading.js
-│   ├── App.js
+│   ├── app/
+│   │   └── App.js                   # Definisi routing
+│   ├── features/
+│   │   ├── auth/                    # Login, guard, session
+│   │   │   ├── api/authApi.js
+│   │   │   ├── components/          # ProtectedRoute, AdminRoute
+│   │   │   ├── pages/LoginPage.js
+│   │   │   ├── store/useAuthStore.js
+│   │   │   └── index.js
+│   │   ├── upload/                  # Upload & antrian file
+│   │   │   ├── components/          # UploadArea, UploadProgress
+│   │   │   ├── pages/UploadPage.js
+│   │   │   ├── store/useUploadStore.js
+│   │   │   ├── constants.js
+│   │   │   └── index.js
+│   │   ├── documents/               # Antrian, selesai, polling
+│   │   │   ├── api/documentsApi.js
+│   │   │   ├── components/          # DocumentTable, DocumentWatcher, ...
+│   │   │   ├── pages/               # QueuePage, ProcessedPage, ...
+│   │   │   ├── store/useDocumentStore.js
+│   │   │   └── index.js
+│   │   ├── results/                 # Tampilan skor & tabel hasil
+│   │   │   ├── components/
+│   │   │   └── index.js
+│   │   └── engine/                  # Engine dashboard (admin)
+│   │       ├── api/engineApi.js
+│   │       ├── components/          # WorkerTable, WorkerSection
+│   │       ├── pages/EngineDashboardPage.js
+│   │       └── index.js
+│   ├── shared/
+│   │   ├── api/
+│   │   │   ├── client.js            # Axios + token interceptor
+│   │   │   ├── config.js
+│   │   │   └── mock/                # Simulasi auth, dokumen, engine
+│   │   ├── layout/                  # MainLayout, Sidebar, UserMenu
+│   │   ├── ui/Toast.js
+│   │   ├── store/useUiStore.js      # Sidebar + toast
+│   │   ├── utils/                   # format.js, colorGrading.js
+│   │   └── constants/upload.js
 │   ├── main.js
 │   └── index.css
 ├── API_CONTRACT.md
@@ -237,8 +338,9 @@ autoskor/
 ### Path Alias
 
 ```js
-import { UploadArea } from '@/components/UploadArea'
-import { useKoperasiStore } from '@/store/useKoperasiStore'
+import { LoginPage } from '@/features/auth'
+import { UploadPage } from '@/features/upload'
+import { MainLayout } from '@/shared/layout/MainLayout'
 ```
 
 ---
@@ -260,29 +362,32 @@ export default function App() {
 ## Arsitektur & Alur Kerja
 
 ```
-User → Frontend (Upload / Antrian / Selesai)
+User → Login → Frontend (Upload / Antrian / Selesai / Engine*)
               │
-              ├── POST /documents/upload     (multi-file)
+              ├── POST /auth/login
+              ├── GET  /auth/me
+              ├── POST /documents/upload     (satu file per request)
               ├── GET  /documents?status=... (antrian & selesai)
-              └── GET  /documents/:id/results
+              ├── GET  /documents/:id/results
+              └── GET  /engine/status        (admin)
               │
               ▼
-         Backend → Queue → Engine (di luar scope FE)
+         Backend → Queue → Worker Pool → Engine
 ```
 
 ### Siklus dokumen
 
 ```
 Upload → queued → processing → done
-         (antrian)  (1 per satu)  (notif popup + lihat hasil)
+         (antrian)  (N worker)   (toast + lihat hasil)
 ```
 
 ### Peran frontend vs backend
 
 | Lapisan | Tugas |
 |---------|-------|
-| **Frontend** | Upload file, tampilkan antrian, tampilkan hasil, notifikasi |
-| **Backend** | Terima file, kelola antrian & status |
+| **Frontend** | Auth, upload file, pantau antrian, tampilkan hasil, monitor engine |
+| **Backend** | Terima file, kelola antrian & status, kelola worker |
 | **Engine** | OCR, ekstrak data, hitung skor |
 
 Detail lengkap: [ARSITEKTUR.md](./ARSITEKTUR.md)
@@ -291,25 +396,23 @@ Detail lengkap: [ARSITEKTUR.md](./ARSITEKTUR.md)
 
 ## State Management
 
-State global di `src/store/useKoperasiStore.js` (Zustand).
+State global dipisah per domain (Zustand):
 
-| State | Deskripsi |
-|-------|-----------|
-| `selectedFiles` | File yang dipilih untuk upload |
-| `isUploading` / `uploadProgress` | Status & progress upload |
-| `toast` | Notifikasi popup aktif |
-| `queueDocuments` | List dokumen antrian |
-| `processedDocuments` | List dokumen selesai |
-| `documentStatusMap` | Tracking status untuk deteksi selesai |
-| `documentResult` | Hasil skor dokumen yang dibuka |
+| Store | Lokasi | Tanggung jawab |
+|-------|--------|----------------|
+| `useAuthStore` | `features/auth/store` | Login, user, logout, session |
+| `useUploadStore` | `features/upload/store` | File pilihan, antrian upload, progress |
+| `useDocumentStore` | `features/documents/store` | List dokumen, polling, hasil skor |
+| `useUiStore` | `shared/store` | Sidebar collapse, toast notifikasi |
 
-| Action | Deskripsi |
-|--------|-----------|
-| `uploadFiles()` | Upload multi-file ke backend |
-| `fetchQueueDocuments()` | Ambil list antrian |
-| `fetchProcessedDocuments()` | Ambil list selesai |
-| `fetchDocumentResults(id)` | Ambil hasil skor |
-| `checkDocumentStatusUpdates()` | Polling status + popup selesai |
+### State utama
+
+| Store | State / Action | Deskripsi |
+|-------|----------------|-----------|
+| `useAuthStore` | `user`, `token`, `login()`, `logout()` | Sesi user |
+| `useUploadStore` | `selectedFiles`, `uploadQueue`, `processUploadQueue()` | Upload async |
+| `useDocumentStore` | `queueDocuments`, `hasPendingDocuments`, `checkDocumentStatusUpdates()` | Dokumen & polling |
+| `useUiStore` | `toast`, `showToast()`, `sidebarCollapsed` | UI global |
 
 ---
 
@@ -321,10 +424,14 @@ State global di `src/store/useKoperasiStore.js` (Zustand).
 
 | Method | Endpoint | Fungsi |
 |--------|----------|--------|
-| `POST` | `/documents/upload` | Upload multi-file (`multipart/form-data`) |
+| `POST` | `/auth/login` | Login user |
+| `GET` | `/auth/me` | Data user yang sedang login |
+| `POST` | `/auth/logout` | Logout |
+| `POST` | `/documents/upload` | Upload satu file (`multipart/form-data`) |
 | `GET` | `/documents?status=queue` | List antrian (queued + processing) |
 | `GET` | `/documents?status=done` | List dokumen selesai |
 | `GET` | `/documents/:id/results` | Hasil penilaian skor |
+| `GET` | `/engine/status` | Status cluster + daftar worker |
 
 ### Backend nyata
 
@@ -419,17 +526,21 @@ Deploy folder `dist/` ke hosting statis (Vercel, Netlify, Nginx, dll.).
 - [x] Setup React + Vite + Tailwind (JavaScript murni)
 - [x] Upload area dengan react-dropzone
 - [x] Skor parsial & panel Tidak Dapat Dihitung
-- [x] Sidebar + React Router (3 halaman)
-- [x] Upload multi-file (max 20 MB total)
+- [x] Sidebar + React Router
 - [x] Halaman antrian & selesai
-- [x] Proses antrian FIFO (satu per satu)
 - [x] Toast notifikasi upload & selesai diproses
+- [x] Polling on-demand (hanya saat ada antrian aktif)
+- [x] Autentikasi user (login, guard, role admin/operator)
+- [x] Upload async dengan antrian background
+- [x] Validasi PDF/DOCX, 20 MB per file
+- [x] Struktur modular (features + shared)
+- [x] Engine dashboard + multi-worker mock
 - [ ] Integrasi backend production
 - [ ] Daftar koperasi
 - [ ] Filter & search
 - [ ] Export PDF / Excel
-- [ ] Preview PDF
-- [ ] Autentikasi user
+- [ ] Preview dokumen
+- [ ] Halaman profile & edit akun
 
 ---
 

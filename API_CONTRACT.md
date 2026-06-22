@@ -39,8 +39,6 @@ Backend
     └── Engine: OCR → ekstrak data → hitung skor → simpan hasil
 ```
 
-**Frontend tidak menghitung skor.** Backend/engine bertanggung jawab penuh atas proses dan hasil penilaian.
-
 ---
 
 ## Konfigurasi
