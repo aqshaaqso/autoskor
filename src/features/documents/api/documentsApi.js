@@ -5,9 +5,11 @@ import {
   mockGetDocuments,
   mockGetDocumentResults,
   filterQueueDocuments,
+  filterFailedDocuments,
+  filterProcessedDocuments,
 } from '@/shared/api/mock/documentsMock'
 
-export { filterQueueDocuments }
+export { filterQueueDocuments, filterFailedDocuments, filterProcessedDocuments }
 
 export async function uploadDocument(file, onProgress) {
   if (USE_MOCK) {

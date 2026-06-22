@@ -9,7 +9,7 @@ import {
   Timer,
 } from "lucide-react";
 import { getEngineStatus } from "@/features/engine/api/engineApi";
-import { WorkerSection } from '@/features/engine/components/WorkerSection'
+import { WorkerSection } from "@/features/engine/components/WorkerSection";
 import { DocumentStatusBadge } from "@/features/documents/components/DocumentStatusBadge";
 import { formatDateTime } from "@/shared/utils/format";
 
@@ -130,7 +130,7 @@ export function EngineDashboardPage() {
         h(
           "p",
           { className: "text-slate-500" },
-          "Pantau cluster worker dan antrian pemrosesan dokumen. Hanya dapat diakses admin.",
+          "Pantau worker dan antrian pemrosesan dokumen.",
         ),
       ),
       h(
@@ -251,14 +251,14 @@ export function EngineDashboardPage() {
                 icon: Activity,
                 label: "Sedang Diproses",
                 value: String(engineStatus.processingCount),
-                hint: "Dokumen parallel",
+                hint: "Jumlah Dokumen",
                 accentClass: "bg-primary-50 text-primary-700",
               }),
               h(StatCard, {
                 icon: Timer,
-                label: "Selesai Hari Ini",
+                label: "Selesai Diproses",
                 value: String(engineStatus.processedToday),
-                hint: "Dokumen done hari ini",
+                hint: "Dokumen Selesai",
                 accentClass: "bg-success-50 text-success-700",
               }),
               h(StatCard, {
@@ -328,7 +328,7 @@ export function EngineDashboardPage() {
                       className:
                         "mt-4 rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500",
                     },
-                    "Belum ada aktivitas worker.",
+                    "Belum ada aktivitas.",
                   ),
             ),
             h(WorkerSection, { workers: engineStatus.workers ?? [] }),

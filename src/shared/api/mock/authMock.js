@@ -1,4 +1,5 @@
 import { getStoredToken } from '../client'
+import { logActivity } from './activityMock'
 
 export const mockUsers = [
   {
@@ -59,9 +60,20 @@ export async function mockLogin(email, password) {
     throw new Error('Email atau password salah.')
   }
 
+  const publicUser = toPublicUser(user)
+
+  logActivity({
+    type: 'login',
+    userId: user.id,
+    userName: user.name,
+    userEmail: user.email,
+    userRole: user.role,
+    description: `${user.name} masuk ke sistem`,
+  })
+
   return {
     token: `mock-token:${user.id}`,
-    user: toPublicUser(user),
+    user: publicUser,
   }
 }
 

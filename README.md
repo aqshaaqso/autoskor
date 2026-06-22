@@ -1,20 +1,14 @@
-# AutoSkor — Portal Upload & Monitoring Penilaian Kesehatan Koperasi
+# AutoSkor — Dashboard Penilaian Kesehatan Koperasi
 
-Frontend SPA untuk upload dokumen RAT, memantau antrian proses, dan menampilkan hasil penilaian kesehatan **Koperasi Simpan Pinjam (KSP)** dan **Unit Simpan Pinjam (USP)** berdasarkan **Permen KUKM No. 14/Per/M.KUKM/XII/2009**.
+Frontend single-page dashboard untuk menghitung dan menampilkan skor penilaian kesehatan **Koperasi Simpan Pinjam (KSP)** dan **Unit Simpan Pinjam (USP)** berdasarkan **Permen KUKM No. 14/Per/M.KUKM/XII/2009**.
 
-Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender memakai `React.createElement`.
-
-Frontend **hanya** upload & monitoring — proses hitung skor dilakukan oleh **backend/engine**, bukan di browser.
+Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender memakai `React.createElement`. Struktur folder **flat** sesuai `fs.txt` (tanpa sidebar, routing, atau subfolder komponen).
 
 ---
 
 ## Daftar Isi
 
 - [Fitur](#fitur)
-- [Halaman & Routing](#halaman--routing)
-- [Autentikasi](#autentikasi)
-- [Upload & Antrian Dokumen](#upload--antrian-dokumen)
-- [Engine & Worker](#engine--worker)
 - [Skor Parsial & Aspek Tidak Dapat Dihitung](#skor-parsial--aspek-tidak-dapat-dihitung)
 - [Tech Stack](#tech-stack)
 - [Prasyarat](#prasyarat)
@@ -39,144 +33,31 @@ Frontend **hanya** upload & monitoring — proses hitung skor dilakukan oleh **b
 
 | Fitur | Deskripsi |
 |-------|-----------|
-| **Login wajib** | Dashboard hanya bisa diakses setelah login |
-| **Role admin & operator** | Dua peran user dengan hak akses berbeda |
-| **User menu** | Dropdown profile di sidebar (nama, email, role, logout) |
-| **Sidebar + routing** | Upload, Antrian, Selesai (+ Engine untuk admin) |
-| **Upload async** | Antrian upload di background — bisa tambah file sambil upload jalan |
-| **Upload per file** | Satu request per file, berurutan (bukan batch sekaligus) |
-| **Validasi file** | Hanya **PDF & DOCX**, maksimal **20 MB per file** |
-| **Progress upload** | Progress bar per file + info antrian upload |
-| **Polling on-demand** | Cek status dokumen hanya saat ada antrian aktif |
-| **Toast notifikasi** | Popup sukses upload & dokumen selesai diproses |
-| **Halaman antrian** | List dokumen `Menunggu` / `Sedang Diproses` + kolom worker |
-| **Multi-worker mock** | 3 worker proses dokumen paralel dari satu antrian FIFO |
-| **Engine dashboard** | Monitor cluster worker (admin only) |
-| **Halaman selesai** | List dokumen selesai + detail hasil skor |
-| **Skor parsial** | Persentase dari 85 bobot (tanpa Manajemen) |
-| **Panel tidak dapat dihitung** | Aspek Manajemen terpisah, skor = 0 |
-| **Color grading** | Status Hijau / Kuning / Merah per komponen |
-| **Mock mode** | Testing UI tanpa backend nyata |
-| **Struktur modular** | Feature-based folders (`features/` + `shared/`) |
+| Single-page layout | Header sederhana + konten utama tanpa sidebar |
+| Upload drag & drop | Single file upload dokumen RAT (PDF, maks. 20 MB) |
+| Preview file | Nama & ukuran file ditampilkan di area upload |
+| Proses async | Tombol "Proses Sekarang" dengan loading non-blocking |
+| Tabel hasil skor | Detail per aspek dan komponen/rasio yang **dapat dihitung** |
+| Panel tidak dapat dihitung | Aspek Manajemen ditampilkan terpisah, tidak masuk skor parsial |
+| Skor parsial | Persentase hanya dari 85 bobot yang bisa dihitung dari dokumen |
+| Ringkasan skor | Skor parsial, persentase parsial, dan predikat kesehatan |
+| Color grading | Status Hijau / Kuning / Merah per komponen |
+| Mock mode | Testing UI tanpa backend |
 
 ### Phase 2 (Belum Tersedia)
 
+- Riwayat upload
 - Daftar koperasi
-- Filter & search dokumen
+- Filter & search
 - Export hasil (PDF / Excel)
-- Preview dokumen yang diupload
-- Halaman profile & edit akun
-- Integrasi backend production (auth + engine nyata)
-
----
-
-## Halaman & Routing
-
-| Route | Halaman | Akses | Fungsi |
-|-------|---------|-------|--------|
-| `/login` | Login | Publik | Masuk ke aplikasi |
-| `/upload` | Upload | Auth | Pilih & upload dokumen RAT |
-| `/queue` | Antrian | Auth | Dokumen menunggu / sedang diproses |
-| `/processed` | Selesai | Auth | Daftar dokumen yang sudah jadi |
-| `/processed/:id` | Detail Hasil | Auth | Tabel skor + ringkasan parsial |
-| `/engine` | Engine Dashboard | **Admin** | Monitor cluster worker |
-
-```
-┌──────────────┬──────────────────────────────────┐
-│  SIDEBAR     │  Konten halaman aktif (Outlet)   │
-│              │                                  │
-│  👤 Profile  │  /login     → LoginPage          │
-│  ● Upload    │  /upload    → UploadPage         │
-│    Antrian   │  /queue     → QueuePage          │
-│    Selesai   │  /processed → ProcessedPage      │
-│    Engine*   │  /processed/:id → Detail skor    │
-│              │  /engine    → EngineDashboard    │
-└──────────────┴──────────────────────────────────┘
-  * menu Engine hanya tampil untuk role admin
-```
-
----
-
-## Autentikasi
-
-### Route guard
-
-- `ProtectedRoute` — semua halaman dashboard butuh login
-- `AdminRoute` — halaman `/engine` hanya untuk role `admin`
-- Token disimpan di `localStorage`, dikirim otomatis via Axios interceptor
-
-### Akun demo (mock mode)
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@koperasi.id` | `admin123` |
-| Operator | `operator@koperasi.id` | `user123` |
-
-Operator bisa upload & pantau dokumen, tetapi **tidak** melihat menu Engine.
-
----
-
-## Upload & Antrian Dokumen
-
-### Aturan upload
-
-| Aturan | Nilai |
-|--------|-------|
-| Format file | PDF, DOCX |
-| Ukuran maksimal | **20 MB per file** |
-| Cara upload | Satu file per request HTTP, berurutan |
-| UX | Konfirmasi upload → masuk antrian background → user bisa pilih file lagi |
-
-### Alur upload
-
-```
-Pilih file → Konfirmasi Upload → Antrian upload (background)
-                                      ↓
-                              Upload file 1 → 2 → 3 ...
-                                      ↓
-                              Dokumen masuk antrian backend (queued)
-```
-
-### Polling status dokumen
-
-| Kondisi | Perilaku |
-|---------|----------|
-| Tidak ada dokumen pending | Cek status **1x**, lalu berhenti |
-| Ada dokumen `queued` / `processing` | Polling tiap **3 detik** |
-| Semua selesai | Polling berhenti otomatis |
-
-Polling dijalankan oleh `DocumentWatcher` di semua halaman dashboard.
-
----
-
-## Engine & Worker
-
-### Model worker pool (mock)
-
-```
-Antrian dokumen (queued)
-        │
-        ├── Worker 1 → processing
-        ├── Worker 2 → processing
-        └── Worker 3 → processing
-```
-
-- Satu antrian FIFO, **3 worker** paralel (mock)
-- Dokumen berstatus `processing` memiliki field `workerId`
-- Engine dashboard menampilkan status cluster + tabel worker (collapsible)
-
-### Engine dashboard (admin)
-
-- Status cluster: Siaga / Menunggu Antrian / Sedang Berjalan
-- Statistik: antrian, sedang diproses, selesai hari ini, total selesai
-- Tabel worker di bagian bawah (bisa dibuka/tutup)
-- Polling on-demand saat engine aktif atau masih ada antrian
+- Preview PDF yang diupload
+- Profile & autentikasi user
 
 ---
 
 ## Skor Parsial & Aspek Tidak Dapat Dihitung
 
-Dokumen RAT biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan manajemen. Lihat [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md).
+Dokumen RAT/laporan keuangan biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan manajemen (kebijakan, prosedur, praktik). Lihat `tidak bisa dihitung.txt` untuk rinciannya.
 
 ### Aspek yang tidak dapat dihitung (bobot 15)
 
@@ -188,7 +69,7 @@ Dokumen RAT biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan 
 | Manajemen Aktiva | 10 |
 | Manajemen Likuiditas | 5 |
 
-### Tampilan di halaman detail hasil
+### Perilaku UI
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -196,36 +77,51 @@ Dokumen RAT biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan 
 ├──────────────────────────────────────┬──────────────────────────┤
 │  Tabel Hasil (dapat dihitung)        │  Panel Tidak Dapat       │
 │  Permodalan, KAP, Efisiensi, ...     │  Dihitung (Manajemen)    │
+│                                      │  skor = 0, bobot = 15    │
 └──────────────────────────────────────┴──────────────────────────┘
 ```
+
+- **`detail`** — hanya baris aspek yang bisa dihitung dari dokumen
+- **`tidakDapatDihitung`** — objek terpisah untuk aspek Manajemen (skor 0, flag & catatan)
+- **`totalSkorParsial` / `persentaseParsial`** — dihitung dari **85 bobot**, bukan 100
+- Predikat kesehatan ditentukan dari persentase parsial
 
 ---
 
 ## Tech Stack
 
+> Versi di bawah ini adalah versi **terinstall** saat ini (`npm list --depth=0`). Range di `package.json` memakai `^` sehingga minor/patch bisa ter-update saat `npm install`.
+
 ### Core
 
-| Teknologi | Versi | Peran |
-|-----------|-------|-------|
-| [React](https://react.dev/) | 19.x | Library UI |
-| [React Router DOM](https://reactrouter.com/) | 7.x | Routing, route guard |
-| [Vite](https://vite.dev/) | 6.x | Dev server & build |
-| JavaScript (ES2022+) | — | Bahasa pemrograman |
+| Teknologi | Versi Terinstall | Range `package.json` | Peran |
+|-----------|------------------|----------------------|-------|
+| [React](https://react.dev/) | **19.2.7** | `^19.1.0` | Library UI |
+| [React DOM](https://react.dev/) | **19.2.7** | `^19.1.0` | React renderer untuk browser |
+| [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) | ES2022+ | — | Bahasa pemrograman |
+| [Vite](https://vite.dev/) | **6.4.3** | `^6.3.5` | Dev server & build tool |
 
 ### Styling & UI
 
-| Teknologi | Versi | Peran |
-|-----------|-------|-------|
-| [Tailwind CSS](https://tailwindcss.com/) | 4.x | Utility-first styling |
-| [lucide-react](https://lucide.dev/) | 0.511.x | Icon set |
+| Teknologi | Versi Terinstall | Range `package.json` | Peran |
+|-----------|------------------|----------------------|-------|
+| [Tailwind CSS](https://tailwindcss.com/) | **4.3.1** | `^4.1.8` | Utility-first styling |
+| [@tailwindcss/vite](https://tailwindcss.com/docs/installation/using-vite) | **4.3.1** | `^4.1.8` | Integrasi Tailwind dengan Vite |
+| [lucide-react](https://lucide.dev/) | **0.511.0** | `^0.511.0` | Icon set |
 
-### State, Upload & HTTP
+### State & HTTP
 
-| Teknologi | Versi | Peran |
-|-----------|-------|-------|
-| [Zustand](https://zustand.docs.pmnd.rs/) | 5.x | State management (multi-store) |
-| [react-dropzone](https://react-dropzone.js.org/) | 14.x | Drag & drop upload |
-| [Axios](https://axios-http.com/) | 1.x | HTTP client + auth interceptor |
+| Teknologi | Versi Terinstall | Range `package.json` | Peran |
+|-----------|------------------|----------------------|-------|
+| [Zustand](https://zustand.docs.pmnd.rs/) | **5.0.14** | `^5.0.5` | Global state management |
+| [react-dropzone](https://react-dropzone.js.org/) | **14.4.1** | `^14.3.8` | Drag & drop file upload |
+| [Axios](https://axios-http.com/) | **1.18.0** | `^1.9.0` | HTTP client ke backend |
+
+### Dev Tools
+
+| Teknologi | Versi Terinstall | Range `package.json` | Peran |
+|-----------|------------------|----------------------|-------|
+| [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react) | **4.7.0** | `^4.5.1` | Fast Refresh & dukungan React di Vite |
 
 ---
 
@@ -239,29 +135,35 @@ Dokumen RAT biasanya hanya berisi angka — **tidak** memuat jawaban pertanyaan 
 ## Instalasi & Menjalankan
 
 ```bash
+# Masuk ke direktori proyek
 cd autoskor
+
+# Install dependencies
 npm install
+
+# Salin environment variables
 copy .env.example .env        # Windows
 # cp .env.example .env      # Linux / macOS
+
+# Jalankan development server
 npm run dev
 ```
 
-Buka `http://localhost:5173` — redirect ke `/login`.
+Buka browser di URL yang ditampilkan terminal (biasanya `http://localhost:5173`).
 
 ### Cara Menggunakan (Mock Mode)
 
-1. Login dengan akun demo (admin atau operator)
-2. Buka **Upload** → drag & drop file PDF/DOCX (maks. 20 MB per file)
-3. Klik **Konfirmasi Upload** → file masuk antrian upload background
-4. (Opsional) Tambah file baru sambil upload masih berjalan
-5. Buka **Antrian** → dokumen muncul (`Menunggu` → `Sedang Diproses`)
-6. Saat selesai → toast notifikasi + dokumen pindah ke **Selesai**
-7. Klik dokumen di **Selesai** → lihat skor parsial & tabel hasil
-8. (Admin) Buka **Engine** → pantau worker & status cluster
+1. Buka halaman utama
+2. Drag & drop dokumen RAT (PDF) ke area upload
+3. Klik **Proses Sekarang**
+4. Tunggu loading (~2.5 detik di mock mode)
+5. Lihat ringkasan skor parsial, tabel hasil (kiri), dan panel Manajemen tidak dapat dihitung (kanan)
 
 ---
 
 ## Environment Variables
+
+Buat atau edit file `.env` di root proyek:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
@@ -271,83 +173,59 @@ VITE_USE_MOCK=true
 | Variable | Default | Deskripsi |
 |----------|---------|-----------|
 | `VITE_API_BASE_URL` | `http://localhost:8000/api` | Base URL backend API |
-| `VITE_USE_MOCK` | `true` | `true` = mock, `false` = backend nyata |
+| `VITE_USE_MOCK` | `true` | `true` = mock data, `false` = hit backend nyata |
+
+> Semua env variable di Vite harus diawali `VITE_` agar bisa diakses di frontend.
 
 ---
 
 ## Struktur Proyek
 
-Struktur **modular berbasis fitur**:
+Struktur flat — semua komponen di satu folder `components/`, tanpa subfolder atau halaman terpisah.
 
 ```
 autoskor/
 ├── public/
 ├── src/
-│   ├── app/
-│   │   └── App.js                   # Definisi routing
-│   ├── features/
-│   │   ├── auth/                    # Login, guard, session
-│   │   │   ├── api/authApi.js
-│   │   │   ├── components/          # ProtectedRoute, AdminRoute
-│   │   │   ├── pages/LoginPage.js
-│   │   │   ├── store/useAuthStore.js
-│   │   │   └── index.js
-│   │   ├── upload/                  # Upload & antrian file
-│   │   │   ├── components/          # UploadArea, UploadProgress
-│   │   │   ├── pages/UploadPage.js
-│   │   │   ├── store/useUploadStore.js
-│   │   │   ├── constants.js
-│   │   │   └── index.js
-│   │   ├── documents/               # Antrian, selesai, polling
-│   │   │   ├── api/documentsApi.js
-│   │   │   ├── components/          # DocumentTable, DocumentWatcher, ...
-│   │   │   ├── pages/               # QueuePage, ProcessedPage, ...
-│   │   │   ├── store/useDocumentStore.js
-│   │   │   └── index.js
-│   │   ├── results/                 # Tampilan skor & tabel hasil
-│   │   │   ├── components/
-│   │   │   └── index.js
-│   │   └── engine/                  # Engine dashboard (admin)
-│   │       ├── api/engineApi.js
-│   │       ├── components/          # WorkerTable, WorkerSection
-│   │       ├── pages/EngineDashboardPage.js
-│   │       └── index.js
-│   ├── shared/
-│   │   ├── api/
-│   │   │   ├── client.js            # Axios + token interceptor
-│   │   │   ├── config.js
-│   │   │   └── mock/                # Simulasi auth, dokumen, engine
-│   │   ├── layout/                  # MainLayout, Sidebar, UserMenu
-│   │   ├── ui/Toast.js
-│   │   ├── store/useUiStore.js      # Sidebar + toast
-│   │   ├── utils/                   # format.js, colorGrading.js
-│   │   └── constants/upload.js
+│   ├── components/
+│   │   ├── UploadArea.js              # upload + preview + tombol aksi
+│   │   ├── ProcessingLoader.js
+│   │   ├── ResultsTable.js            # tabel + ScoreRow inline
+│   │   ├── NonProcessAble.js # panel aspek tidak dapat dihitung
+│   │   ├── ScoreSummary.js
+│   │   └── StatusBadge.js
+│   ├── store/
+│   │   └── useKoperasiStore.js
+│   ├── services/
+│   │   └── api.js
+│   ├── utils/
+│   │   └── colorGrading.js            # grading + formatters
+│   ├── App.js                         # header + layout dua kolom hasil
 │   ├── main.js
 │   └── index.css
-├── API_CONTRACT.md
-├── ARSITEKTUR.md
-├── TECH_STACK.md
-├── TIDAK_DAPAT_DIHITUNG.md
-├── STRUKTUR_PROYEK.md
 ├── .env.example
+├── fs.txt
+├── tidak bisa dihitung.txt            # spesifikasi aspek Manajemen
 ├── index.html
+├── jsconfig.json
 ├── package.json
 └── vite.config.js
 ```
 
 ### Path Alias
 
+Alias `@/` mengarah ke folder `src/`:
+
 ```js
-import { LoginPage } from '@/features/auth'
-import { UploadPage } from '@/features/upload'
-import { MainLayout } from '@/shared/layout/MainLayout'
+import { UploadArea } from '@/components/UploadArea'
+import { useKoperasiStore } from '@/store/useKoperasiStore'
 ```
 
 ---
 
 ## Pendekatan JavaScript Murni
 
-Tidak memakai TypeScript maupun JSX — semua UI dirender dengan `React.createElement`:
+Proyek ini **tidak memakai TypeScript maupun JSX**. Semua komponen UI dirender dengan `React.createElement`, di-import langsung sebagai `h`:
 
 ```js
 import { createElement as h, Fragment } from 'react'
@@ -362,116 +240,130 @@ export default function App() {
 ## Arsitektur & Alur Kerja
 
 ```
-User → Login → Frontend (Upload / Antrian / Selesai / Engine*)
-              │
-              ├── POST /auth/login
-              ├── GET  /auth/me
-              ├── POST /documents/upload     (satu file per request)
-              ├── GET  /documents?status=... (antrian & selesai)
-              ├── GET  /documents/:id/results
-              └── GET  /engine/status        (admin)
-              │
-              ▼
-         Backend → Queue → Worker Pool → Engine
+┌─────────────┐     upload file      ┌──────────────┐
+│   Browser   │ ──────────────────►  │   Frontend   │
+│   (User)    │                      │  React + JS  │
+└─────────────┘                      └──────┬───────┘
+       ▲                                    │
+       │         JSON hasil penilaian       │ POST /penilaian/process
+       └────────────────────────────────────┘
+                                            │
+                                     ┌──────▼───────┐
+                                     │   Backend    │
+                                     │ PDF/OCR +    │
+                                     │ Perhitungan  │
+                                     └──────────────┘
 ```
 
-### Siklus dokumen
+### Flow Upload
 
-```
-Upload → queued → processing → done
-         (antrian)  (N worker)   (toast + lihat hasil)
-```
-
-### Peran frontend vs backend
-
-| Lapisan | Tugas |
-|---------|-------|
-| **Frontend** | Auth, upload file, pantau antrian, tampilkan hasil, monitor engine |
-| **Backend** | Terima file, kelola antrian & status, kelola worker |
-| **Engine** | OCR, ekstrak data, hitung skor |
-
-Detail lengkap: [ARSITEKTUR.md](./ARSITEKTUR.md)
+1. User membuka halaman utama → melihat area upload
+2. User drag & drop atau pilih file (single file)
+3. Info file ditampilkan (nama + ukuran) + tombol Hapus
+4. User klik **Proses Sekarang**
+5. UI menampilkan loading (non-blocking)
+6. Frontend mengirim file ke backend secara async
+7. Backend mengembalikan JSON hasil penilaian
+8. Frontend merender ringkasan skor parsial, tabel hasil, dan panel tidak dapat dihitung
 
 ---
 
 ## State Management
 
-State global dipisah per domain (Zustand):
+State global dikelola dengan **Zustand** di `src/store/useKoperasiStore.js`.
 
-| Store | Lokasi | Tanggung jawab |
-|-------|--------|----------------|
-| `useAuthStore` | `features/auth/store` | Login, user, logout, session |
-| `useUploadStore` | `features/upload/store` | File pilihan, antrian upload, progress |
-| `useDocumentStore` | `features/documents/store` | List dokumen, polling, hasil skor |
-| `useUiStore` | `shared/store` | Sidebar collapse, toast notifikasi |
+| State | Tipe | Deskripsi |
+|-------|------|-----------|
+| `currentFile` | `File \| null` | File yang sedang dipilih |
+| `isProcessing` | `boolean` | Status proses upload |
+| `results` | `object \| null` | Hasil penilaian dari backend |
+| `error` | `string \| null` | Pesan error |
 
-### State utama
-
-| Store | State / Action | Deskripsi |
-|-------|----------------|-----------|
-| `useAuthStore` | `user`, `token`, `login()`, `logout()` | Sesi user |
-| `useUploadStore` | `selectedFiles`, `uploadQueue`, `processUploadQueue()` | Upload async |
-| `useDocumentStore` | `queueDocuments`, `hasPendingDocuments`, `checkDocumentStatusUpdates()` | Dokumen & polling |
-| `useUiStore` | `toast`, `showToast()`, `sidebarCollapsed` | UI global |
+| Action | Deskripsi |
+|--------|-----------|
+| `setFile(file)` | Set file yang dipilih |
+| `clearFile()` | Hapus file terpilih |
+| `processFile()` | Kirim file ke backend / mock |
+| `resetResults()` | Reset hasil penilaian |
 
 ---
 
 ## Integrasi Backend
 
-> Kontrak API lengkap untuk tim backend: [API_CONTRACT.md](./API_CONTRACT.md)
-
 ### Endpoint
 
-| Method | Endpoint | Fungsi |
-|--------|----------|--------|
-| `POST` | `/auth/login` | Login user |
-| `GET` | `/auth/me` | Data user yang sedang login |
-| `POST` | `/auth/logout` | Logout |
-| `POST` | `/documents/upload` | Upload satu file (`multipart/form-data`) |
-| `GET` | `/documents?status=queue` | List antrian (queued + processing) |
-| `GET` | `/documents?status=done` | List dokumen selesai |
-| `GET` | `/documents/:id/results` | Hasil penilaian skor |
-| `GET` | `/engine/status` | Status cluster + daftar worker |
+```
+POST {VITE_API_BASE_URL}/penilaian/process
+Content-Type: multipart/form-data
 
-### Backend nyata
+Body:
+  file: <File>
+```
+
+### Mengaktifkan Backend Nyata
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
 VITE_USE_MOCK=false
 ```
 
-Restart dev server setelah mengubah `.env`. Timeout Axios: **120 detik**.
+Restart dev server setelah mengubah `.env`.
+
+### Timeout
+
+Request timeout diset **120 detik** karena proses ekstraksi PDF/OCR bisa memakan waktu.
 
 ---
 
 ## Skema Data Hasil
 
-`GET /documents/:id/results` mengembalikan:
+Backend harus mengembalikan JSON dengan struktur berikut. Aspek Manajemen **tidak** dimasukkan ke `detail`, melainkan ke `tidakDapatDihitung`.
 
 ```js
 {
-  document: { id, fileName, fileSize, status, uploadedAt },
-  results: {
-    totalSkorParsial: 64.35,
-    persentaseParsial: 75.7,
-    bobotDapatDihitung: 85,
-    predikat: 'CUKUP SEHAT',
-    tidakDapatDihitung: { aspek, bobot, skor, flag, catatan, komponen[] },
-    detail: [
-      {
-        aspek: 'Permodalan',
-        komponen: 'Rasio Modal Sendiri terhadap Total Asset',
-        nilaiRasio: 45.67,
-        nilai: 50,
-        bobot: 6,
-        skor: 3.0,
-        persentaseMaks: 50,
-        status: 'Kuning'
-      }
-    ]
-  }
+  totalSkorParsial: 64.35,
+  persentaseParsial: 75.7,
+  bobotDapatDihitung: 85,
+  predikat: 'CUKUP SEHAT',  // SEHAT | CUKUP SEHAT | KURANG SEHAT | TIDAK SEHAT | SANGAT TIDAK SEHAT
+
+  tidakDapatDihitung: {
+    aspek: 'Manajemen',
+    bobot: 15,
+    skor: 0,
+    flag: 'Tidak Dapat Dihitung - Data Manajemen Tidak Tersedia',
+    catatan: 'Penilaian aspek manajemen memerlukan data non-keuangan yang tidak ditemukan dalam dokumen.',
+    komponen: [
+      { nama: 'Manajemen Umum', jumlahPertanyaan: 12 },
+      { nama: 'Kelembagaan', jumlahPertanyaan: 6 },
+      { nama: 'Manajemen Permodalan', jumlahPertanyaan: 5 },
+      { nama: 'Manajemen Aktiva', jumlahPertanyaan: 10 },
+      { nama: 'Manajemen Likuiditas', jumlahPertanyaan: 5 },
+    ],
+  },
+
+  detail: [
+    {
+      aspek: 'Permodalan',
+      komponen: 'Rasio Modal Sendiri terhadap Total Asset',
+      nilaiRasio: 45.67,       // number atau string "Ya"/"Tidak"
+      nilai: 50,
+      bobot: 6,
+      skor: 3.0,
+      persentaseMaks: 50,
+      status: 'Kuning'         // Hijau | Kuning | Merah
+    }
+    // ... hanya aspek yang dapat dihitung dari dokumen
+  ]
 }
 ```
+
+| Field | Deskripsi |
+|-------|-----------|
+| `totalSkorParsial` | Total skor dari aspek yang dapat dihitung |
+| `persentaseParsial` | `(totalSkorParsial / bobotDapatDihitung) × 100` |
+| `bobotDapatDihitung` | Bobot maksimal yang bisa dinilai dari dokumen (default 85) |
+| `tidakDapatDihitung` | Data aspek yang tidak bisa dihitung (opsional jika semua aspek tersedia) |
+| `detail` | Baris komponen/rasio yang dapat dihitung saja |
 
 ---
 
@@ -482,21 +374,23 @@ Restart dev server setelah mengubah `.env`. Timeout Axios: **120 detik**.
 | **Hijau** | ≥ 85% dari nilai maksimal komponen |
 | **Kuning** | ≥ 50% dan < 85% |
 | **Merah** | < 50% |
-| **Tidak Dapat Dihitung** | Aspek Manajemen — data tidak tersedia |
+| **Tidak Dapat Dihitung** | Aspek tidak memiliki data dalam dokumen (khusus panel Manajemen) |
+
+Logika ada di `src/utils/colorGrading.js`.
 
 ### 7 Aspek Penilaian (Permen KUKM No. 14/2009)
 
 | No | Aspek | Bobot | Keterangan |
 |----|-------|-------|------------|
-| 1 | Permodalan | 15 | Dapat dihitung |
-| 2 | Kualitas Aktiva Produktif | 25 | Dapat dihitung |
-| 3 | Manajemen | 15 | **Tidak dapat dihitung** dari RAT saja |
-| 4 | Efisiensi | 10 | Dapat dihitung |
-| 5 | Likuiditas | 15 | Dapat dihitung |
-| 6 | Kemandirian dan Pertumbuhan | 10 | Dapat dihitung |
-| 7 | Jatidiri Koperasi | 10 | Dapat dihitung |
+| 1 | Permodalan | 15 | Dapat dihitung dari laporan keuangan |
+| 2 | Kualitas Aktiva Produktif | 25 | Dapat dihitung dari laporan keuangan |
+| 3 | Manajemen | 15 | **Tidak dapat dihitung** dari dokumen RAT saja |
+| 4 | Efisiensi | 10 | Dapat dihitung dari laporan keuangan |
+| 5 | Likuiditas | 15 | Dapat dihitung dari laporan keuangan |
+| 6 | Kemandirian dan Pertumbuhan | 10 | Dapat dihitung dari laporan keuangan |
+| 7 | Jatidiri Koperasi | 10 | Dapat dihitung dari laporan keuangan |
 
-**Skor parsial: 85 bobot** (tanpa Manajemen).
+**Total bobot: 100** — skor parsial menggunakan **85 bobot** (tanpa Manajemen).
 
 ---
 
@@ -505,8 +399,8 @@ Restart dev server setelah mengubah `.env`. Timeout Axios: **120 detik**.
 | Command | Deskripsi |
 |---------|-----------|
 | `npm run dev` | Development server (hot reload) |
-| `npm run build` | Build production ke `dist/` |
-| `npm run preview` | Preview build production |
+| `npm run build` | Build production ke folder `dist/` |
+| `npm run preview` | Preview build production secara lokal |
 
 ---
 
@@ -517,40 +411,52 @@ npm run build
 npm run preview
 ```
 
-Deploy folder `dist/` ke hosting statis (Vercel, Netlify, Nginx, dll.).
+Output build ada di folder `dist/`. Deploy ke hosting statis (Vercel, Netlify, Nginx, dll.).
+
+### Environment Production
+
+```
+VITE_API_BASE_URL=https://api.example.com/api
+VITE_USE_MOCK=false
+```
 
 ---
 
 ## Roadmap
 
-- [x] Setup React + Vite + Tailwind (JavaScript murni)
+- [x] Setup project React + Vite + Tailwind (JavaScript murni)
+- [x] Struktur flat sesuai `fs.txt`
 - [x] Upload area dengan react-dropzone
-- [x] Skor parsial & panel Tidak Dapat Dihitung
-- [x] Sidebar + React Router
-- [x] Halaman antrian & selesai
-- [x] Toast notifikasi upload & selesai diproses
-- [x] Polling on-demand (hanya saat ada antrian aktif)
-- [x] Autentikasi user (login, guard, role admin/operator)
-- [x] Upload async dengan antrian background
-- [x] Validasi PDF/DOCX, 20 MB per file
-- [x] Struktur modular (features + shared)
-- [x] Engine dashboard + multi-worker mock
+- [x] Mock data & tabel hasil
+- [x] Color grading & ringkasan skor
+- [x] Skor parsial (85 bobot, tanpa Manajemen)
+- [x] Panel "Tidak Dapat Dihitung" terpisah dari tabel hasil
 - [ ] Integrasi backend production
+- [ ] Riwayat upload
 - [ ] Daftar koperasi
 - [ ] Filter & search
 - [ ] Export PDF / Excel
-- [ ] Preview dokumen
-- [ ] Halaman profile & edit akun
+- [ ] Preview PDF
+- [ ] Autentikasi user
+
+---
+
+## Perbedaan dengan `koperasijs`
+
+| Aspek | AutoSkor | koperasijs |
+|-------|----------|------------|
+| Struktur folder | Flat (`fs.txt`) | Nested per komponen |
+| Navigasi | Single-page, header saja | Sidebar + React Router |
+| Helper render | `createElement as h` langsung | Helper `src/utils/h.js` |
+| Halaman | Satu halaman | Dashboard + Riwayat |
+| Skor Manajemen | Panel terpisah, tidak masuk parsial | Semua aspek dalam satu tabel |
 
 ---
 
 ## Dokumen Terkait
 
-- [API_CONTRACT.md](./API_CONTRACT.md) — Kontrak API untuk tim backend
-- [ARSITEKTUR.md](./ARSITEKTUR.md) — Diagram arsitektur & alur sistem
-- [TECH_STACK.md](./TECH_STACK.md) — Penjelasan teknologi lengkap
-- [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) — Aspek Manajemen tidak dapat dihitung
-- [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md) — Struktur folder proyek
+- `tidak bisa dihitung.txt` — Komponen Manajemen yang tidak dapat dihitung dari dokumen RAT
+- `fs.txt` — Struktur folder proyek
 
 ---
 

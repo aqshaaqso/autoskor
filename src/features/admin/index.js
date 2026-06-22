@@ -1,0 +1,1 @@
+export { UserActivityPage } from './pages/UserActivityPage'

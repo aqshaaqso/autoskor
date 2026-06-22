@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Cpu,
+  Users,
 } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/useAuthStore'
 import { useUiStore } from '@/shared/store/useUiStore'
@@ -17,6 +18,12 @@ const menuItems = [
   { label: 'Antrian', path: '/queue', icon: ListOrdered },
   { label: 'Selesai', path: '/processed', icon: CheckCircle2 },
   { label: 'Engine', path: '/engine', icon: Cpu, roles: ['admin'] },
+  {
+    label: 'Aktivitas Pengguna',
+    path: '/admin/activity',
+    icon: Users,
+    roles: ['admin'],
+  },
 ]
 
 export function Sidebar() {

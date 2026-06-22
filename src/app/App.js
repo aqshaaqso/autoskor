@@ -5,13 +5,14 @@ import {
   AdminRoute,
   LoginPage,
 } from '@/features/auth'
-import { UploadPage } from '@/features/upload'
+import { UploadPage, FilePreviewPage } from '@/features/upload'
 import {
   QueuePage,
   ProcessedPage,
   ProcessedDetailPage,
 } from '@/features/documents'
 import { EngineDashboardPage } from '@/features/engine'
+import { UserActivityPage } from '@/features/admin'
 import { MainLayout } from '@/shared/layout/MainLayout'
 
 export default function App() {
@@ -19,6 +20,10 @@ export default function App() {
     Routes,
     null,
     h(Route, { path: '/login', element: h(LoginPage) }),
+    h(Route, {
+      path: '/preview/:previewId',
+      element: h(ProtectedRoute, null, h(FilePreviewPage)),
+    }),
     h(
       Route,
       {
@@ -33,6 +38,10 @@ export default function App() {
       h(Route, {
         path: 'engine',
         element: h(AdminRoute, null, h(EngineDashboardPage)),
+      }),
+      h(Route, {
+        path: 'admin/activity',
+        element: h(AdminRoute, null, h(UserActivityPage)),
       }),
     ),
     h(Route, { path: '*', element: h(Navigate, { to: '/upload', replace: true }) }),

@@ -13,6 +13,8 @@ export const useUiStore = create((set) => ({
         message,
         type,
         documentId: options.documentId ?? null,
+        linkTo: options.linkTo ?? null,
+        linkLabel: options.linkLabel ?? null,
       },
     }),
 

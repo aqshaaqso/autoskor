@@ -8,6 +8,7 @@ export function DocumentTable({
   documents,
   showDetailLink = false,
   showWorker = false,
+  showUploader = false,
   emptyMessage,
 }) {
   if (documents.length === 0) {
@@ -39,6 +40,8 @@ export function DocumentTable({
             h('th', { className: 'px-4 py-3 font-semibold text-slate-700' }, 'Dokumen'),
             h('th', { className: 'px-4 py-3 font-semibold text-slate-700' }, 'Ukuran'),
             h('th', { className: 'px-4 py-3 font-semibold text-slate-700' }, 'Diupload'),
+            showUploader &&
+              h('th', { className: 'px-4 py-3 font-semibold text-slate-700' }, 'Pengupload'),
             h('th', { className: 'px-4 py-3 font-semibold text-slate-700' }, 'Status'),
             showWorker &&
               h('th', { className: 'px-4 py-3 font-semibold text-slate-700' }, 'Worker'),
@@ -70,7 +73,17 @@ export function DocumentTable({
                     },
                     h(FileText, { className: 'h-4 w-4 text-primary-600' }),
                   ),
-                  h('span', { className: 'font-medium text-slate-800' }, doc.fileName),
+                  h(
+                    'div',
+                    { className: 'min-w-0' },
+                    h('span', { className: 'font-medium text-slate-800' }, doc.fileName),
+                    doc.failureReason &&
+                      h(
+                        'p',
+                        { className: 'mt-0.5 text-xs text-danger-600' },
+                        doc.failureReason,
+                      ),
+                  ),
                 ),
               ),
               h(
@@ -83,6 +96,27 @@ export function DocumentTable({
                 { className: 'px-4 py-3 text-slate-600' },
                 formatDateTime(doc.uploadedAt),
               ),
+              showUploader &&
+                h(
+                  'td',
+                  { className: 'px-4 py-3' },
+                  doc.uploadedBy
+                    ? h(
+                        'div',
+                        null,
+                        h(
+                          'p',
+                          { className: 'font-medium text-slate-800' },
+                          doc.uploadedBy.name,
+                        ),
+                        h(
+                          'p',
+                          { className: 'text-xs text-slate-500' },
+                          doc.uploadedBy.email,
+                        ),
+                      )
+                    : h('span', { className: 'text-slate-400' }, '-'),
+                ),
               h(
                 'td',
                 { className: 'px-4 py-3' },
@@ -98,16 +132,18 @@ export function DocumentTable({
                 h(
                   'td',
                   { className: 'px-4 py-3 text-right' },
-                  h(
-                    Link,
-                    {
-                      to: `/processed/${doc.id}`,
-                      className:
-                        'inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700',
-                    },
-                    'Lihat Hasil',
-                    h(ChevronRight, { className: 'h-4 w-4' }),
-                  ),
+                  doc.status === 'done'
+                    ? h(
+                        Link,
+                        {
+                          to: `/processed/${doc.id}`,
+                          className:
+                            'inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700',
+                        },
+                        'Lihat Hasil',
+                        h(ChevronRight, { className: 'h-4 w-4' }),
+                      )
+                    : h('span', { className: 'text-sm text-slate-400' }, '-'),
                 ),
             ),
           ),

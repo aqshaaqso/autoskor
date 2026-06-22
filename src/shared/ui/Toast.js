@@ -35,16 +35,19 @@ export function Toast() {
         'div',
         { className: 'min-w-0 flex-1' },
         h('p', { className: 'text-sm font-medium' }, toast.message),
-        toast.documentId &&
+        (toast.linkTo || toast.documentId) &&
           h(
             Link,
             {
-              to: `/processed/${toast.documentId}`,
+              to:
+                toast.linkTo ??
+                (toast.type === 'error' ? '/queue' : `/processed/${toast.documentId}`),
               onClick: clearToast,
               className:
                 'mt-2 inline-block text-sm font-semibold text-primary-600 hover:text-primary-700',
             },
-            'Lihat Hasil →',
+            toast.linkLabel ??
+              (toast.type === 'error' ? 'Lihat Antrian →' : 'Lihat Hasil →'),
           ),
       ),
       h(

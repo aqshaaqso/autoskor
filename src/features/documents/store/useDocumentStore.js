@@ -3,6 +3,7 @@ import {
   getDocuments,
   getDocumentResults,
   filterQueueDocuments,
+  filterProcessedDocuments,
 } from '@/features/documents/api/documentsApi'
 import { useUiStore } from '@/shared/store/useUiStore'
 
@@ -34,7 +35,7 @@ export const useDocumentStore = create((set, get) => ({
   fetchProcessedDocuments: async () => {
     set({ isLoadingProcessed: true, listError: null })
     try {
-      const documents = await getDocuments('done')
+      const documents = await getDocuments('processed')
       set({ processedDocuments: documents, isLoadingProcessed: false })
     } catch (err) {
       const message =
@@ -66,6 +67,7 @@ export const useDocumentStore = create((set, get) => ({
       const { documentStatusMap } = get()
       const nextStatusMap = { ...documentStatusMap }
       let hasNewlyCompleted = false
+      let hasNewlyFailed = false
       let statusChanged = false
 
       for (const doc of allDocuments) {
@@ -82,9 +84,22 @@ export const useDocumentStore = create((set, get) => ({
           useUiStore.getState().showToast(
             `Dokumen "${doc.fileName}" selesai diproses.`,
             'success',
-            { documentId: doc.id },
+            { documentId: doc.id, linkTo: `/processed/${doc.id}`, linkLabel: 'Lihat Hasil →' },
           )
           hasNewlyCompleted = true
+        }
+
+        if (
+          doc.status === 'failed' &&
+          (previousStatus === 'queued' || previousStatus === 'processing')
+        ) {
+          const workerLabel = doc.workerId ? ` (${doc.workerId})` : ''
+          useUiStore.getState().showToast(
+            `Worker gagal memproses "${doc.fileName}"${workerLabel}.`,
+            'error',
+            { documentId: doc.id, linkTo: '/processed', linkLabel: 'Lihat di Selesai →' },
+          )
+          hasNewlyFailed = true
         }
 
         nextStatusMap[doc.id] = doc.status
@@ -101,11 +116,12 @@ export const useDocumentStore = create((set, get) => ({
 
       if (statusChanged) {
         updates.queueDocuments = filterQueueDocuments(allDocuments)
+        updates.processedDocuments = filterProcessedDocuments(allDocuments)
       }
 
       set(updates)
 
-      if (hasNewlyCompleted) {
+      if (hasNewlyCompleted || hasNewlyFailed) {
         void get().fetchProcessedDocuments()
       }
     } catch {
