@@ -12,11 +12,11 @@ export const USE_MOCK_DOCUMENTS =
  */
 export const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH !== 'false'
 
-/** Engine dashboard — default mock, middleware belum expose /engine/status */
-export const USE_MOCK_ENGINE = import.meta.env.VITE_USE_MOCK_ENGINE !== 'false'
+/**
+ * Engine dashboard — default real via GET /scoring-jobs (middleware tidak punya /engine/status).
+ * Set VITE_USE_MOCK_ENGINE=true untuk kembali ke mock lokal.
+ */
+export const USE_MOCK_ENGINE = import.meta.env.VITE_USE_MOCK_ENGINE === 'true'
 
 /** Admin activity — default mock, middleware belum expose /admin/overview */
 export const USE_MOCK_ADMIN = import.meta.env.VITE_USE_MOCK_ADMIN !== 'false'
-
-/** @deprecated Gunakan USE_MOCK_DOCUMENTS — tetap ada untuk kompatibilitas */
-export const USE_MOCK = USE_MOCK_DOCUMENTS

@@ -3,7 +3,7 @@ import {
   login as apiLogin,
   getCurrentUser,
   logout as apiLogout,
-} from '@/features/auth/api/authApi'
+} from '../api/authApi'
 import { getStoredToken, setStoredToken } from '@/shared/api/client'
 
 export const useAuthStore = create((set) => ({

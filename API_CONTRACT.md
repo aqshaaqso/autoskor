@@ -1,8 +1,8 @@
-# API Contract — AutoSkor Frontend ↔ Backend
+# API Contract — AutoSkor Frontend ↔ Middleware
 
-Dokumen ini untuk **tim backend**. Berisi kontrak API yang harus diimplementasikan agar frontend AutoSkor bisa terintegrasi tanpa perubahan kode.
+Dokumen ini untuk **tim backend** dan **developer frontend**. Berisi kontrak Middleware API yang dipakai AutoSkor saat ini, plus panduan menulis kode pemanggilan API.
 
-Frontend sudah siap — cukup set `VITE_USE_MOCK=false` di `.env` setelah backend berjalan.
+Swagger live: `http://172.16.210.244:8000/swagger/index.html`
 
 ---
 
@@ -10,16 +10,15 @@ Frontend sudah siap — cukup set `VITE_USE_MOCK=false` di `.env` setelah backen
 
 - [Gambaran Integrasi](#gambaran-integrasi)
 - [Konfigurasi](#konfigurasi)
-- [Status Dokumen](#status-dokumen)
-- [Endpoint](#endpoint)
-- [Skema Response](#skema-response)
+- [Endpoint Middleware](#endpoint-middleware)
+- [Status Scoring Job](#status-scoring-job)
+- [Skema Response UI](#skema-response-ui)
 - [Aturan Upload](#aturan-upload)
-- [Polling & Perilaku Frontend](#polling--perilaku-frontend)
-- [Skor Parsial & Manajemen](#skor-parsial--manajemen)
-- [Error Handling](#error-handling)
-- [CORS](#cors)
+- [Polling & Notifikasi](#polling--notifikasi)
+- [Endpoint Belum di Middleware](#endpoint-belum-di-middleware)
+- [Panduan Developer Frontend](#panduan-developer-frontend)
+- [Error Handling & CORS](#error-handling--cors)
 - [Checklist Integrasi](#checklist-integrasi)
-- [Di Luar Scope (Phase 2)](#di-luar-scope-phase-2)
 
 ---
 
@@ -28,16 +27,18 @@ Frontend sudah siap — cukup set `VITE_USE_MOCK=false` di `.env` setelah backen
 ```
 Frontend (React SPA)
     │
-    ├── POST /documents/upload        → kirim file RAT
-    ├── GET  /documents?status=...  → baca antrian & selesai
-    └── GET  /documents/:id/results   → baca hasil skor
+    ├── POST /scoring-jobs/upload        → kirim file RAT
+    ├── GET  /scoring-jobs               → list antrian & selesai
+    └── GET  /scoring-jobs/{id}          → detail job + hasil skor
     │
     ▼
-Backend
+Middleware API
     ├── Terima & simpan file
-    ├── Kelola antrian & status dokumen
-    └── Engine: OCR → ekstrak data → hitung skor → simpan hasil
+    ├── Kelola antrian scoring jobs
+    └── Engine callback → progress, result, failed
 ```
+
+Endpoint `engine-callback/*` dipanggil oleh **engine**, bukan browser.
 
 ---
 
@@ -46,395 +47,337 @@ Backend
 ### Environment variable frontend
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=http://172.16.210.244:8000/api
 VITE_USE_MOCK=false
+VITE_USE_MOCK_AUTH=true
+VITE_USE_MOCK_ADMIN=true
+VITE_USE_MOCK_ENGINE=false
+VITE_SCORING_JOBS_LIST_LIMIT=100
 ```
 
 | Variable | Default | Deskripsi |
 |----------|---------|-----------|
-| `VITE_API_BASE_URL` | `http://localhost:8000/api` | Base URL backend (tanpa trailing slash) |
-| `VITE_USE_MOCK` | `true` | `false` = pakai backend nyata |
+| `VITE_API_BASE_URL` | `http://localhost:8000/api` | Base URL sampai `/api` |
+| `VITE_USE_MOCK` | `true` | `false` = dokumen pakai middleware |
+| `VITE_USE_MOCK_AUTH` | `true` | Auth masih mock sampai `/auth/*` tersedia |
+| `VITE_USE_MOCK_ADMIN` | `true` | Admin masih mock sampai `/admin/*` tersedia |
+| `VITE_USE_MOCK_ENGINE` | `false` | `true` = engine dashboard pakai mock lokal |
+| `VITE_SCORING_JOBS_LIST_LIMIT` | `100` | Limit list scoring jobs |
 
 Restart dev server setelah mengubah `.env`.
 
-### HTTP client frontend
+### HTTP client
 
-- Library: **Axios**
+- Library: **Axios** (`src/shared/api/client.js`)
 - Timeout: **120 detik**
 - Base URL: dari `VITE_API_BASE_URL`
+- Auth token: Bearer header (jika login nyata aktif)
+
+### Aturan URL
+
+| Lokasi | Isi | Contoh |
+|--------|-----|--------|
+| `.env` | Base URL penuh sampai `/api` | `http://host:8000/api` |
+| Kode JS | Path relatif saja | `api.get('/scoring-jobs')` |
+
+Salah: `api.get('/api/scoring-jobs')` → menghasilkan `/api/api/scoring-jobs`
 
 ---
 
-## Status Dokumen
+## Endpoint Middleware
 
-Backend **wajib** menggunakan nilai status berikut (lowercase):
+### Health check
 
-| Status | Label di UI | Keterangan |
-|--------|-------------|------------|
-| `queued` | Menunggu | Dokumen masuk antrian, belum diproses |
-| `processing` | Sedang Diproses | Engine sedang memproses |
-| `done` | Selesai | Hasil skor tersedia |
-| `failed` | Gagal | Proses gagal (opsional) |
+```
+GET /health
+```
+
+Monitoring — tidak dipakai UI.
+
+---
+
+### List scoring jobs
+
+```
+GET /scoring-jobs?status={status}&limit={limit}&offset={offset}
+```
+
+| Query | Deskripsi |
+|-------|-----------|
+| `status` | Comma-separated status middleware (lihat tabel mapping) |
+| `limit` | Maks. 100 |
+| `offset` | Pagination offset |
+
+**Filter yang dipakai frontend:**
+
+| Halaman | Query `status` |
+|---------|----------------|
+| Antrian (`/queue`) | `uploading,uploaded,waiting,running` |
+| Selesai (`/processed`) | `completed_success,failed,canceled` |
+| Polling global | Tanpa filter (semua job) |
+
+**Response:** `{ data: [...], pagination: { ... } }`
+
+---
+
+### Upload file
+
+```
+POST /scoring-jobs/upload
+Content-Type: multipart/form-data
+```
+
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `files` | File[] | Ya | Nama field harus `files` (bisa diulang) |
+
+Frontend menampilkan progress upload via `onUploadProgress`. Setelah sukses, toast ditampilkan — **tidak menunggu** engine selesai.
+
+---
+
+### Detail scoring job
+
+```
+GET /scoring-jobs/{id}
+```
+
+`id` = UUID scoring job.
+
+Digunakan untuk halaman detail hasil (`/processed/:id`). Hasil skor ada di `result.result_data` saat status `completed_success`.
+
+---
+
+### Cancel scoring job
+
+```
+POST /scoring-jobs/{id}/cancel
+```
+
+Tersedia di middleware, **belum diimplementasi** di UI frontend.
+
+---
+
+### Engine callback (bukan untuk frontend)
+
+| Method | Path | Pemanggil |
+|--------|------|-----------|
+| POST | `/engine-callback/scoring-jobs/{id}/progress` | Engine |
+| POST | `/engine-callback/scoring-jobs/{id}/result` | Engine |
+| POST | `/engine-callback/scoring-jobs/{id}/failed` | Engine |
+
+---
+
+## Status Scoring Job
+
+### Status middleware
+
+`uploading` · `uploaded` · `waiting` · `running` · `completed_success` · `failed` · `canceled`
+
+### Mapping ke UI frontend
+
+Didefinisikan di `src/shared/api/middlewareContract.js`:
+
+| Middleware | UI | Label |
+|------------|-----|-------|
+| `uploading` | `queued` | Menunggu |
+| `uploaded` | `queued` | Menunggu |
+| `waiting` | `queued` | Menunggu |
+| `running` | `processing` | Sedang Diproses |
+| `completed_success` | `done` | Selesai |
+| `failed` | `failed` | Gagal |
+| `canceled` | `failed` | Gagal |
 
 ### Siklus status
 
 ```
-queued → processing → done
-                   ↘ failed (opsional)
+uploading → uploaded → waiting → running → completed_success
+                                        ↘ failed
+                                        ↘ canceled
 ```
 
-Frontend mendeteksi perubahan status lewat **polling** (bukan WebSocket). Backend cukup update status di database — frontend akan membaca perubahan pada poll berikutnya.
+Frontend mendeteksi perubahan lewat **polling HTTP** (bukan WebSocket).
 
 ---
 
-## Endpoint
+## Skema Response UI
 
-### 1. Upload dokumen
+Mapper di `src/shared/api/scoringJobs/scoringJobsMapper.js` mengubah response middleware ke format yang dipakai komponen React.
 
-```
-POST /documents/upload
-Content-Type: multipart/form-data
-```
+### Objek dokumen (setelah mapping)
 
-**Request body:**
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | string | UUID scoring job |
+| `fileName` | string | Nama file asli |
+| `fileSize` | number | Ukuran bytes |
+| `status` | string | `queued` / `processing` / `done` / `failed` |
+| `uploadedAt` | string (ISO) | Waktu upload |
+| `failureReason` | string? | Pesan error jika gagal |
+| `progressPercent` | number? | Progress engine |
 
-| Field | Tipe | Wajib | Keterangan |
-|-------|------|-------|------------|
-| `files` | File[] | Ya | Multi-file. Nama field harus `files` (bukan `file`) |
+### Objek hasil skor
 
-**Response `200 OK`:**
+Lihat [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) untuk penjelasan skor parsial.
 
-```json
-{
-  "documents": [
-    {
-      "id": "doc-1",
-      "fileName": "RAT-2024.pdf",
-      "fileSize": 1048576,
-      "status": "queued",
-      "uploadedAt": "2026-06-22T10:30:00.000Z"
-    }
-  ],
-  "message": "Dokumen berhasil diupload"
-}
-```
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `totalSkorParsial` | number | Skor dari aspek dapat dihitung |
+| `persentaseParsial` | number | Persentase dari 85 bobot |
+| `bobotDapatDihitung` | number | Biasanya `85` |
+| `predikat` | string | `SEHAT` / `CUKUP SEHAT` / `KURANG SEHAT` / `TIDAK SEHAT` |
+| `tidakDapatDihitung` | object | Aspek Manajemen (bobot 15, skor 0) |
+| `detail` | array | Baris skor per komponen |
 
-**Catatan:**
-- Setiap file yang diupload harus langsung berstatus `queued`
-- Frontend menampilkan progress upload via `onUploadProgress` Axios
-- Setelah sukses, frontend menampilkan toast — **tidak menunggu** engine selesai
-
----
-
-### 2. List dokumen
-
-```
-GET /documents?status={status}
-```
-
-**Query parameter `status`:**
-
-| Nilai | Fungsi |
-|-------|--------|
-| `queue` | Dokumen `queued` + `processing` (digabung) |
-| `done` | Dokumen selesai |
-| *(kosong)* | Semua dokumen (dipakai polling global) |
-
-**Response `200 OK`:** array dokumen
-
-```json
-[
-  {
-    "id": "doc-1",
-    "fileName": "RAT-2024.pdf",
-    "fileSize": 1048576,
-    "status": "processing",
-    "uploadedAt": "2026-06-22T10:30:00.000Z"
-  }
-]
-```
-
-**Urutan antrian (disarankan):**
-1. `processing` di atas
-2. `queued` di bawah (FIFO)
-
----
-
-### 3. Hasil penilaian
-
-```
-GET /documents/:id/results
-```
-
-Hanya tersedia jika `status === 'done'`.
-
-**Response `200 OK`:**
-
-```json
-{
-  "document": {
-    "id": "doc-1",
-    "fileName": "RAT-2024.pdf",
-    "fileSize": 1048576,
-    "status": "done",
-    "uploadedAt": "2026-06-22T10:30:00.000Z"
-  },
-  "results": {
-    "totalSkorParsial": 64.35,
-    "persentaseParsial": 75.7,
-    "bobotDapatDihitung": 85,
-    "predikat": "CUKUP SEHAT",
-    "tidakDapatDihitung": {
-      "aspek": "Manajemen",
-      "bobot": 15,
-      "skor": 0,
-      "flag": "Tidak Dapat Dihitung - Data Manajemen Tidak Tersedia",
-      "catatan": "Penilaian aspek manajemen memerlukan data non-keuangan yang tidak ditemukan dalam dokumen.",
-      "komponen": [
-        { "nama": "Manajemen Umum", "jumlahPertanyaan": 12 },
-        { "nama": "Kelembagaan", "jumlahPertanyaan": 6 },
-        { "nama": "Manajemen Permodalan", "jumlahPertanyaan": 5 },
-        { "nama": "Manajemen Aktiva", "jumlahPertanyaan": 10 },
-        { "nama": "Manajemen Likuiditas", "jumlahPertanyaan": 5 }
-      ]
-    },
-    "detail": [
-      {
-        "aspek": "Permodalan",
-        "komponen": "Rasio Modal Sendiri terhadap Total Asset",
-        "nilaiRasio": 45.67,
-        "nilai": 50,
-        "bobot": 6,
-        "skor": 3.0,
-        "persentaseMaks": 50,
-        "status": "Kuning"
-      }
-    ]
-  }
-}
-```
-
-**Response jika belum selesai:** `404` atau error message yang bisa dibaca frontend.
-
----
-
-## Skema Response
-
-### Objek `document`
-
-| Field | Tipe | Wajib | Keterangan |
-|-------|------|-------|------------|
-| `id` | string | Ya | ID unik dokumen |
-| `fileName` | string | Ya | Nama file asli |
-| `fileSize` | number | Ya | Ukuran dalam bytes |
-| `status` | string | Ya | `queued` / `processing` / `done` / `failed` |
-| `uploadedAt` | string (ISO 8601) | Ya | Waktu upload |
-
-### Objek `results`
-
-| Field | Tipe | Wajib | Keterangan |
-|-------|------|-------|------------|
-| `totalSkorParsial` | number | Ya | Total skor dari aspek dapat dihitung |
-| `persentaseParsial` | number | Ya | Persentase dari 85 bobot |
-| `bobotDapatDihitung` | number | Ya | Biasanya `85` |
-| `predikat` | string | Ya | `SEHAT` / `CUKUP SEHAT` / `KURANG SEHAT` / `TIDAK SEHAT` |
-| `tidakDapatDihitung` | object | Ya | Aspek Manajemen (lihat bawah) |
-| `detail` | array | Ya | Baris skor per komponen |
-
-### Objek `detail[]`
-
-| Field | Tipe | Wajib | Keterangan |
-|-------|------|-------|------------|
-| `aspek` | string | Ya | Nama aspek penilaian |
-| `komponen` | string | Ya | Nama komponen/rasio |
-| `nilaiRasio` | number | Ya | Nilai rasio terhitung |
-| `nilai` | number | Ya | Nilai skor komponen |
-| `bobot` | number | Ya | Bobot komponen |
-| `skor` | number | Ya | Skor terbobot |
-| `persentaseMaks` | number | Ya | Persentase maksimal komponen |
-| `status` | string | Ya | `Hijau` / `Kuning` / `Merah` |
-
-### Predikat kesehatan
-
-| Predikat | Kondisi (contoh) |
-|----------|------------------|
-| `SEHAT` | Persentase parsial tinggi |
-| `CUKUP SEHAT` | Persentase parsial menengah-atas |
-| `KURANG SEHAT` | Persentase parsial menengah-bawah |
-| `TIDAK SEHAT` | Persentase parsial rendah |
-
-Logika predikat ditentukan engine backend — frontend hanya menampilkan string yang dikirim.
+Engine boleh mengirim camelCase atau snake_case — mapper menormalisasi keduanya.
 
 ---
 
 ## Aturan Upload
 
-Aturan ini sudah divalidasi di frontend. Backend disarankan validasi ulang:
-
 | Aturan | Nilai |
 |--------|-------|
-| Jumlah file | Multi-file (tidak dibatasi 1) |
-| Batas ukuran total | Maksimal **20 MB** (semua file digabung) |
+| Jumlah file | Multi-file |
+| Batas ukuran total | Maksimal **20 MB** |
 | Format | PDF (utama), JPG, PNG, WEBP |
 | Field name | `files` |
 
+Validasi ada di frontend; backend disarankan validasi ulang.
+
 ---
 
-## Polling & Perilaku Frontend
-
-Frontend menggunakan **polling HTTP**, bukan WebSocket.
+## Polling & Notifikasi
 
 | Polling | Interval | Endpoint | Tujuan |
 |---------|----------|----------|--------|
-| Global watcher | 3 detik | `GET /documents` (tanpa filter) | Deteksi dokumen selesai → toast |
-| Halaman antrian | 5 detik | `GET /documents?status=queue` | Refresh tabel antrian |
+| `DocumentWatcher` | 3 detik | `GET /scoring-jobs` | Deteksi selesai → toast |
+| Halaman antrian | 5 detik | `GET /scoring-jobs` (filter antrian) | Refresh tabel |
 
-### Trigger toast "selesai diproses"
-
-Toast muncul jika status berubah:
-
-```
-queued      → done
-processing  → done
-```
-
-Backend cukup update status — frontend yang mendeteksi perubahan.
-
-### Implikasi untuk backend
-
-- Tidak perlu endpoint khusus notifikasi
-- Status harus konsisten di setiap `GET /documents`
-- Hasil skor harus tersedia segera setelah status `done`
+Toast "selesai diproses" muncul saat status berubah ke `done` (`completed_success` di middleware).
 
 ---
 
-## Skor Parsial & Manajemen
+## Endpoint Belum di Middleware
 
-Dokumen RAT biasanya hanya berisi angka keuangan — **aspek Manajemen (15 bobot) tidak dapat dihitung** dari dokumen saja.
+Fitur berikut masih memakai **mock lokal**:
 
-Lihat [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) untuk rincian.
+| Method | Path | Mock flag |
+|--------|------|-----------|
+| POST | `/auth/login` | `VITE_USE_MOCK_AUTH` |
+| GET | `/auth/me` | `VITE_USE_MOCK_AUTH` |
+| POST | `/auth/logout` | `VITE_USE_MOCK_AUTH` |
+| GET | `/engine/status` | `VITE_USE_MOCK_ENGINE` |
+| GET | `/admin/overview` | `VITE_USE_MOCK_ADMIN` |
 
-### Yang diharapkan dari engine
-
-| Aspek | Bobot | Dapat dihitung? |
-|-------|-------|-----------------|
-| Permodalan | 15 | Ya |
-| Kualitas Aktiva Produktif | 25 | Ya |
-| Manajemen | 15 | **Tidak** — set skor 0, isi `tidakDapatDihitung` |
-| Efisiensi | 10 | Ya |
-| Likuiditas | 15 | Ya |
-| Kemandirian dan Pertumbuhan | 10 | Ya |
-| Jatidiri Koperasi | 10 | Ya |
-
-**Skor parsial = 85 bobot** (tanpa Manajemen).
+Engine dashboard saat ini mengagregasi data dari `GET /scoring-jobs` karena `/engine/status` belum ada di middleware.
 
 ---
 
-## Error Handling
+## Panduan Developer Frontend
 
-### Format error yang disarankan
+### Lapisan kode (bawah → atas)
 
-Frontend membaca `err.message` dari Axios. Disarankan response error:
+```
+shared/api/client.js              → Axios instance
+shared/api/config.js              → Flag mock dari .env
+shared/api/scoringJobs/
+  scoringJobsApi.js               → HTTP call middleware
+  scoringJobsMapper.js            → Response → format UI
+features/documents/api/documentsApi.js  → Switch mock/real
+features/documents/store/useDocumentStore.js → State Zustand
+Halaman React                     → Panggil store, BUKAN Axios langsung
+```
+
+### Menambah endpoint baru
+
+1. Tulis fungsi HTTP di layer yang tepat (`scoringJobsApi.js`, `authApi.js`, dll.)
+2. Path di kode = path Swagger **minus** `/api`
+3. Tambah mapper jika format response berbeda dari UI
+4. Bungkus di feature API + switch mock
+5. Panggil dari store Zustand
+6. Hubungkan ke komponen/halaman
+7. Update dokumen ini jika kontrak berubah
+
+### Contoh pemanggilan
+
+```js
+import { api } from '@/shared/api/client'
+
+// List
+const { data } = await api.get('/scoring-jobs', {
+  params: { status: 'waiting,running', limit: 100 },
+})
+
+// Detail
+const { data } = await api.get(`/scoring-jobs/${id}`)
+
+// Upload
+const formData = new FormData()
+formData.append('files', file)
+await api.post('/scoring-jobs/upload', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+  onUploadProgress: (e) => { /* progress bar */ },
+})
+```
+
+---
+
+## Error Handling & CORS
+
+### Format error
+
+Frontend membaca `err.message` dari Axios. Disarankan:
 
 ```json
-{
-  "message": "Ukuran file melebihi batas 20 MB"
-}
+{ "message": "Ukuran file melebihi batas 20 MB" }
 ```
-
-atau HTTP status code standar dengan body yang bisa di-parse.
-
-### Kode status HTTP
 
 | Kode | Situasi |
 |------|---------|
 | `200` | Sukses |
-| `400` | Validasi gagal (format, ukuran) |
-| `404` | Dokumen/hasil tidak ditemukan |
+| `400` | Validasi gagal |
+| `404` | Job/hasil tidak ditemukan |
 | `413` | File terlalu besar |
 | `500` | Error server/engine |
 
----
+### CORS
 
-## CORS
-
-Backend **wajib** mengizinkan origin frontend.
-
-**Development:**
-
-```
-Access-Control-Allow-Origin: http://localhost:5173
-Access-Control-Allow-Methods: GET, POST, OPTIONS
-Access-Control-Allow-Headers: Content-Type
-```
-
-Sesuaikan origin untuk staging/production.
+Backend wajib mengizinkan origin frontend (development: `http://localhost:5173`).
 
 ---
 
 ## Checklist Integrasi
 
-### Backend
+### Middleware (wajib)
 
-- [ ] `POST /documents/upload` — terima multi-file, field `files`
-- [ ] `GET /documents?status=queue` — return `queued` + `processing`
-- [ ] `GET /documents?status=done` — return dokumen selesai
-- [ ] `GET /documents` — return semua dokumen (untuk polling)
-- [ ] `GET /documents/:id/results` — return skema hasil lengkap
-- [ ] Status flow: `queued` → `processing` → `done`
-- [ ] Engine menghitung skor parsial (85 bobot) + `tidakDapatDihitung`
-- [ ] CORS dikonfigurasi untuk origin frontend
-- [ ] Response JSON match skema di dokumen ini
+- [ ] `POST /scoring-jobs/upload` — terima multi-file, field `files`
+- [ ] `GET /scoring-jobs` — filter status comma-separated
+- [ ] `GET /scoring-jobs/{id}` — detail job + `result.result_data` saat selesai
+- [ ] Status flow: `waiting` → `running` → `completed_success`
+- [ ] Engine mengisi skor parsial (85 bobot) + `tidakDapatDihitung`
+- [ ] CORS dikonfigurasi
 
 ### Frontend (sudah siap)
 
 - [x] UI upload, antrian, selesai, detail hasil
-- [x] Layer API di `src/services/api.js`
+- [x] Layer API + mapper middleware
 - [x] Polling status + toast notifikasi
-- [x] Mock mode untuk testing tanpa backend
-- [x] Switch ke backend via `VITE_USE_MOCK=false`
+- [x] Mock per domain (auth, admin, engine, dokumen)
+- [x] Switch ke middleware via `VITE_USE_MOCK=false`
 
 ### Uji integrasi
 
-1. Set `VITE_USE_MOCK=false` dan `VITE_API_BASE_URL` ke backend
+1. Set `VITE_USE_MOCK=false` dan `VITE_API_BASE_URL` ke middleware
 2. Upload 1 file PDF → cek toast sukses + muncul di antrian
 3. Tunggu engine selesai → cek toast "selesai diproses"
 4. Buka halaman Selesai → klik dokumen → cek tabel skor
-5. Upload 2+ file → cek antrian FIFO
+5. Upload 2+ file → cek antrian
 6. Upload file > 20 MB → cek error handling
-
----
-
-## Di Luar Scope (Phase 2)
-
-Fitur berikut **belum** diimplementasi di frontend — tidak menghalangi integrasi dasar:
-
-- Autentikasi / authorization
-- Daftar koperasi
-- Filter & search dokumen
-- Export PDF / Excel
-- Preview PDF
-- WebSocket / push notification
 
 ---
 
 ## Dokumen Terkait
 
-- [README.md](./README.md) — Dokumentasi proyek & instalasi
-- [ARSITEKTUR.md](./ARSITEKTUR.md) — Diagram arsitektur sistem
+- [README.md](./README.md) — Instalasi & ringkasan proyek
+- [ARSITEKTUR.md](./ARSITEKTUR.md) — Diagram alur sistem
 - [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) — Aspek Manajemen
-- `src/services/api.js` — Implementasi HTTP client frontend
-
----
-
-## Kontak & Catatan
-
-Path endpoint final (`/api/documents/...` vs `/documents/...`) mengikuti konvensi tim backend — cukup sesuaikan `VITE_API_BASE_URL` agar base path-nya benar.
-
-Contoh: jika backend expose `http://localhost:8000/api/v1/documents`, set:
-
-```env
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-```
-
-Frontend akan memanggil `{baseURL}/documents/upload`, dst.
+- [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md) — Struktur folder & konvensi import

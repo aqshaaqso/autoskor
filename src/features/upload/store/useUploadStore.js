@@ -1,7 +1,6 @@
 import { create } from 'zustand'
-import { uploadDocument } from '@/features/documents/api/documentsApi'
-import { useDocumentStore } from '@/features/documents/store/useDocumentStore'
-import { useUiStore } from '@/shared/store/useUiStore'
+import { uploadDocument, useDocumentStore } from '@/features/documents'
+import { useUiStore } from '@/shared/store'
 import { MAX_FILE_UPLOAD_BYTES } from '@/shared/constants/upload'
 
 function createUploadQueueItem(file) {

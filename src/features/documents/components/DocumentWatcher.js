@@ -1,5 +1,5 @@
 import { createElement as h, useEffect } from 'react'
-import { useDocumentStore } from '@/features/documents/store/useDocumentStore'
+import { useDocumentStore } from '../store/useDocumentStore'
 
 const POLL_INTERVAL_MS = 3000
 

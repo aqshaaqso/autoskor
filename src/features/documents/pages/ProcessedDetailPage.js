@@ -1,7 +1,7 @@
 import { createElement as h, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
-import { useDocumentStore } from '@/features/documents/store/useDocumentStore'
+import { useDocumentStore } from '../store/useDocumentStore'
 import { ResultsTable, ScoreSummary, TidakDapatDihitungPanel } from '@/features/results'
 
 export function ProcessedDetailPage() {

@@ -1,7 +1,7 @@
 import { createElement as h } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, ChevronRight } from 'lucide-react'
-import { DocumentStatusBadge } from '@/features/documents/components/DocumentStatusBadge'
+import { DocumentStatusBadge } from './DocumentStatusBadge'
 import { formatFileSize, formatDateTime } from '@/shared/utils/format'
 
 export function DocumentTable({

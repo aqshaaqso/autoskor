@@ -1,6 +1,6 @@
 import { createElement as h, useState } from 'react'
 import { ChevronDown, Server } from 'lucide-react'
-import { WorkerTable } from '@/features/engine/components/WorkerTable'
+import { WorkerTable } from './WorkerTable'
 
 export function WorkerSection({ workers = [] }) {
   const [isOpen, setIsOpen] = useState(true)

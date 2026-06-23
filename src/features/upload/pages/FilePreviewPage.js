@@ -5,11 +5,11 @@ import { AlertCircle, FileText, Loader2, X } from 'lucide-react'
 import {
   getFileTypeLabel,
   isDocxFile,
-} from '@/features/upload/utils/filePreview'
+} from '../utils/filePreview'
 import {
   getPreviewEntry,
   revokePreview,
-} from '@/features/upload/utils/previewSession'
+} from '../utils/previewSession'
 import { formatFileSize } from '@/shared/utils/format'
 
 export function FilePreviewPage() {

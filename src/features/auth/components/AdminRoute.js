@@ -1,6 +1,6 @@
 import { createElement as h } from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuthStore } from '@/features/auth/store/useAuthStore'
+import { useAuthStore } from '../store/useAuthStore'
 
 export function AdminRoute({ children }) {
   const user = useAuthStore((state) => state.user)

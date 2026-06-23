@@ -8,8 +8,8 @@ import {
   Cpu,
   Users,
 } from 'lucide-react'
-import { useAuthStore } from '@/features/auth/store/useAuthStore'
-import { useUiStore } from '@/shared/store/useUiStore'
+import { useAuthStore } from '@/features/auth'
+import { useUiStore } from '@/shared/store'
 import { SidebarMenuItem } from './SidebarMenuItem'
 import { UserMenu } from './UserMenu'
 

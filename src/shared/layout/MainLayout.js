@@ -1,8 +1,8 @@
 import { createElement as h } from 'react'
 import { Outlet } from 'react-router-dom'
-import { DocumentWatcher } from '@/features/documents/components/DocumentWatcher'
+import { DocumentWatcher } from '@/features/documents'
 import { Sidebar } from './Sidebar'
-import { Toast } from '@/shared/ui/Toast'
+import { Toast } from '@/shared/ui'
 
 export function MainLayout() {
   return h(

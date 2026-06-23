@@ -1,6 +1,6 @@
 import { createElement as h } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { StatusBadge } from '@/features/results/components/StatusBadge'
+import { StatusBadge } from './StatusBadge'
 import { formatSkor } from '@/shared/utils/format'
 
 export function TidakDapatDihitungPanel({ data }) {

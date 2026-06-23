@@ -1,7 +1,7 @@
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronUp, LogOut } from 'lucide-react'
-import { useAuthStore } from '@/features/auth/store/useAuthStore'
+import { useAuthStore } from '@/features/auth'
 
 function getInitials(name) {
   if (!name) return 'U'

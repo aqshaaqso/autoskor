@@ -6,21 +6,23 @@ Penjelasan alur, komponen, dan tanggung jawab sistem.
 
 ## Gambaran Besar
 
-AutoSkor adalah Single Page Application (SPA) frontend untuk upload dokumen RAT koperasi, memantau antrian proses, dan menampilkan hasil penilaian kesehatan koperasi (KSP/USP) berdasarkan **Permen KUKM No. 14/2009**.
+AutoSkor adalah SPA frontend untuk upload dokumen RAT koperasi, memantau antrian proses, dan menampilkan hasil penilaian kesehatan koperasi (KSP/USP) berdasarkan **Permen KUKM No. 14/2009**.
 
-Peran frontend: **upload dokumen, beri notifikasi sukses, pantau antrian & tampilkan hasil**.
+Peran frontend: **autentikasi, upload dokumen, notifikasi, pantau antrian, tampilkan hasil, monitoring engine (admin)**.
 
 ### Pemisahan tanggung jawab
 
 | Lapisan | Tugas |
 |---------|-------|
-| **Frontend** | Upload file, notifikasi, tampilkan list & hasil skor |
-| **Backend** | Terima file, validasi, simpan, kelola antrian & status |
-| **Engine** | OCR, ekstrak data, hitung skor, simpan hasil |
+| **Frontend** | Upload file, notifikasi, tampilkan list & hasil skor, dashboard admin |
+| **Middleware** | Terima file, validasi, simpan, kelola scoring jobs & status |
+| **Engine** | OCR, ekstrak data, hitung skor, callback hasil ke middleware |
+
+Frontend **tidak** menghitung skor — hanya mengirim file dan membaca status/hasil.
 
 ---
 
-## Diagram Arsitektur Besar
+## Diagram Arsitektur
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -32,332 +34,241 @@ Peran frontend: **upload dokumen, beri notifikasi sukses, pantau antrian & tampi
 │                     FRONTEND — AutoSkor (React SPA)                     │
 │  ┌──────────┐  ┌─────────────────────────────────────────────────────┐  │
 │  │ Sidebar  │  │              Area Konten (Outlet)                   │  │
-│  │          │  │  ┌─────────┐ ┌─────────┐ ┌──────────┐ ┌─────────┐  │  │
-│  │ Upload   │  │  │ Upload  │ │ Antrian │ │ Selesai  │ │ Detail  │  │  │
-│  │ Antrian  │  │  │  Page   │ │  Page   │ │   Page   │ │  Skor   │  │  │
-│  │ Selesai  │  │  └─────────┘ └─────────┘ └──────────┘ └─────────┘  │  │
-│  └──────────┘  └─────────────────────────────────────────────────────┘  │
-│                                                                         │
-│  Zustand (state)  ·  Axios (HTTP)  ·  React Router (navigasi)           │
+│  │ Upload   │  │  Upload · Antrian · Selesai · Detail · Engine     │  │
+│  │ Antrian  │  └─────────────────────────────────────────────────────┘  │
+│  │ Selesai  │                                                           │
+│  │ Engine*  │  Zustand · Axios · React Router · Lazy pages              │
+│  └──────────┘                                                           │
 └─────────────────────────────────────────────────────────────────────────┘
-            │ POST upload          │ GET list antrian    │ GET list selesai
-            │ (multi-file)         │ GET status          │ GET hasil skor
-            ▼                      ▼                     ▼
+            │ POST /scoring-jobs/upload
+            │ GET  /scoring-jobs
+            │ GET  /scoring-jobs/{id}
+            ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         BACKEND                                         │
-│                                                                         │
-│   Terima file → Validasi → Simpan → Masukkan ke QUEUE                   │
-│                                                                         │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                         DOCUMENT QUEUE                          │   │
-│   │   [doc-A.pdf]  [doc-B.pdf]  [doc-C.pdf]  ...                   │   │
-│   └─────────────────────────────────────────────────────────────────┘   │
+│                         MIDDLEWARE API                                  │
+│   Terima file → Validasi → Simpan → Kelola scoring jobs                 │
 │                                      │                                  │
 │                                      ▼                                  │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                    ENGINE                                       │   │
-│   │         OCR / Ekstrak data / Hitung skor / Simpan hasil         │   │
+│   │                    ENGINE (via callback)                        │   │
+│   │         OCR / Ekstrak data / Hitung skor / Kirim hasil          │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
+
+* Engine & Aktivitas Pengguna hanya untuk role admin
 ```
 
 ---
 
-## Layout Frontend (Sidebar + React Router)
+## Layout & Routing
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  HEADER — AutoSkor                                               │
+│  HEADER — AutoSkor                              [UserMenu]       │
 ├────────────┬─────────────────────────────────────────────────────┤
 │  SIDEBAR   │  <Outlet /> — halaman aktif                         │
 │            │                                                     │
-│  [Upload]  │   URL: /upload                                      │
-│  [Antrian] │   URL: /queue                                       │
-│  [Selesai] │   URL: /processed                                   │
-│            │   URL: /processed/:id  (detail hasil skor)          │
-│            │                                                     │
+│  Upload    │   /upload                                           │
+│  Antrian   │   /queue                                            │
+│  Selesai   │   /processed                                        │
+│  Engine*   │   /processed/:id  (detail skor)                     │
+│  Aktivitas*│   /preview/:previewId                               │
+│            │   /engine                                           │
+│            │   /admin/activity                                   │
 └────────────┴─────────────────────────────────────────────────────┘
 ```
 
-React Router mengatur URL → komponen mana yang dirender di `Outlet`. Sidebar tetap tampil; konten kanan berganti sesuai halaman aktif.
+| Path | Halaman | Guard |
+|------|---------|-------|
+| `/login` | LoginPage | Publik |
+| `/` | Redirect → `/upload` | ProtectedRoute |
+| `/upload` | UploadPage | ProtectedRoute |
+| `/preview/:previewId` | FilePreviewPage | ProtectedRoute |
+| `/queue` | QueuePage | ProtectedRoute |
+| `/processed` | ProcessedPage | ProtectedRoute |
+| `/processed/:id` | ProcessedDetailPage | ProtectedRoute |
+| `/engine` | EngineDashboardPage | AdminRoute |
+| `/admin/activity` | UserActivityPage | AdminRoute |
+
+Halaman di-load lazy via `src/app/lazyPages.js` dengan fallback `PageLoader`.
 
 ### Struktur routing
 
 ```
 main.js
   └── BrowserRouter
-        └── App
-              └── Routes
-                    └── Route path="/" element={MainLayout}
-                          ├── Sidebar (NavLink ke /upload, /queue, /processed)
-                          └── Outlet
-                                ├── /upload        → UploadPage
-                                ├── /queue         → QueuePage
-                                ├── /processed     → ProcessedPage
-                                └── /processed/:id → ProcessedDetailPage
+        └── App (Routes)
+              ├── /login → LoginPage
+              ├── /preview/:previewId → ProtectedRoute → FilePreviewPage
+              └── / → ProtectedRoute → MainLayout
+                    ├── Sidebar + DocumentWatcher
+                    └── Outlet
+                          ├── /upload        → UploadPage
+                          ├── /queue         → QueuePage
+                          ├── /processed     → ProcessedPage
+                          ├── /processed/:id → ProcessedDetailPage
+                          ├── /engine        → AdminRoute → EngineDashboardPage
+                          └── /admin/activity → AdminRoute → UserActivityPage
 ```
 
 ---
 
-## Siklus Hidup Dokumen (Document Lifecycle)
+## Siklus Hidup Scoring Job
 
 ```
       ┌─────────────┐
       │ User pilih  │
       │  file(s)    │
       └──────┬──────┘
-             │
-             ▼
-      ┌─────────────┐     gagal      ┌─────────────┐
-      │ FE validasi │───────────────►│ Error toast │
-      │ format+20MB │                │ (format/size)│
-      └──────┬──────┘                └─────────────┘
-             │ lolos
+             │ lolos validasi (format + 20MB)
              ▼
       ┌─────────────┐
       │ FE upload   │◄── progress bar HANYA di sini
-      │ ke backend  │
+      │ ke middleware│
       └──────┬──────┘
-             │ sukses
-             ▼
-      ┌─────────────┐
-      │ Toast:      │
-      │ "Berhasil   │
-      │  diupload"  │
-      └──────┬──────┘
-             │
+             │ sukses → toast "Berhasil diupload"
              ▼
       ┌─────────────────────────────────────────┐
-      │         BACKEND — status: queued        │
-      │         (masuk antrian)                 │
+      │  Middleware: uploading → uploaded →     │
+      │  waiting (antrian)                      │
       └──────┬──────────────────────────────────┘
-             │
              ▼
       ┌─────────────────────────────────────────┐
-      │         ENGINE memproses                  │
-      │         status: processing                │
+      │  Engine: running (diproses)             │
       └──────┬──────────────────────────────────┘
-             │
              ▼
       ┌─────────────────────────────────────────┐
-      │         Selesai — status: done            │
-      │         Hasil skor tersimpan              │
+      │  Selesai: completed_success             │
+      │  Hasil di result.result_data            │
       └─────────────────────────────────────────┘
+             │
+             └──► failed / canceled (opsional)
 ```
 
-### Status dokumen
+### Status: middleware → UI
 
-```
-queued  ──►  processing  ──►  done
-(antrian)    (engine jalan)   (bisa lihat skor)
+| Middleware | UI |
+|------------|-----|
+| `uploading`, `uploaded`, `waiting` | `queued` |
+| `running` | `processing` |
+| `completed_success` | `done` |
+| `failed`, `canceled` | `failed` |
 
-                      └──► failed (opsional — gagal proses di engine)
-```
+Mapping di `src/shared/api/middlewareContract.js`, diterapkan di `scoringJobsMapper.js`.
 
 ---
 
 ## Alur Per Halaman
 
-### Halaman 1 — Upload (`/upload`)
+### Upload (`/upload`)
 
-1. User drag & drop banyak file (multi-file)
-2. FE cek: total size ≤ 20MB? format OK?
-   - Tidak → tampilkan error
-3. Klik Upload → Axios `POST /documents/upload`
-   - `onUploadProgress` → bar % upload
-4. Response 200 → toast "Dokumen berhasil diupload"
-5. **SELESAI** — FE tidak tunggu engine
+1. User drag & drop multi-file
+2. Validasi total ≤ 20 MB, format PDF/JPG/PNG/WEBP
+3. `POST /scoring-jobs/upload` dengan `onUploadProgress`
+4. Toast sukses — FE tidak menunggu engine
 
-### Halaman 2 — Antrian (`/queue`)
+### Antrian (`/queue`)
 
-1. User buka halaman Antrian
-2. `GET /documents?status=queue`
-3. Tampilkan tabel: nama file | tanggal upload | status
-4. Auto-refresh tiap 5 detik + tombol refresh manual
+1. `GET /scoring-jobs?status=uploading,uploaded,waiting,running`
+2. Tabel: nama file, tanggal, status
+3. Auto-refresh 5 detik + refresh manual
 
-### Halaman 3 — Selesai (`/processed`)
+### Selesai (`/processed`)
 
-1. User buka halaman Selesai
-2. `GET /documents?status=done`
-3. Tampilkan list dokumen yang sudah jadi
-4. User klik satu dokumen → navigasi ke `/processed/:id`
-5. `GET /documents/:id/results`
-6. Tampilkan:
-   - `ScoreSummary` (skor parsial)
-   - `ResultsTable` (aspek dapat dihitung)
-   - `NonProcessAble` (aspek Manajemen)
+1. `GET /scoring-jobs?status=completed_success,failed,canceled`
+2. Klik dokumen → `/processed/:id`
+3. `GET /scoring-jobs/{id}` → tampilkan `ScoreSummary`, `ResultsTable`, `NonProcessAble`
+
+### Engine (`/engine`, admin)
+
+Dashboard mengagregasi data dari `GET /scoring-jobs` (middleware tidak punya `/engine/status`). Komponen: `ClusterStatusPanel`, `EngineStatsGrid`, `RecentActivityList`, `WorkerSection`.
+
+### Login (`/login`)
+
+Auth memakai mock (`VITE_USE_MOCK_AUTH=true`) sampai middleware menyediakan `/auth/*`. Token disimpan di `useAuthStore`, route dilindungi `ProtectedRoute` / `AdminRoute`.
 
 ---
 
-## Diagram Sequence (Upload → Antrian → Hasil)
+## Lapisan API Frontend
 
 ```
-  User          Frontend (React)       Backend          Engine
-    │                 │                   │                │
-    │─ pilih file ───►│                   │                │
-    │                 │─ validasi 20MB ──►│                │
-    │                 │                   │                │
-    │─ klik Upload ──►│                   │                │
-    │                 │─ POST upload ────►│                │
-    │                 │◄── progress % ────│  (upload saja) │
-    │                 │◄── 200 OK ────────│                │
-    │◄─ toast sukses ─│                   │                │
-    │                 │                   │─ masuk queue ─►│
-    │                 │                   │                  │─ proses
-    │                 │                   │◄── hasil skor ───│
-    │                 │                   │  status=done   │
-    │                 │                   │                │
-    │─ buka Antrian ─►│                   │                │
-    │                 │─ GET queued ─────►│                │
-    │                 │◄── list ──────────│                │
-    │◄─ tabel antrian │                   │                │
-    │                 │                   │                │
-    │─ buka Selesai ─►│                   │                │
-    │                 │─ GET done ────────►│                │
-    │                 │◄── list ──────────│                │
-    │─ klik dokumen ─►│                   │                │
-    │                 │─ GET /:id/results►│                │
-    │                 │◄── JSON skor ─────│                │
-    │◄─ tampil skor ──│                   │                │
+Halaman React
+    ↓
+Zustand Store (useDocumentStore, useUploadStore, useAuthStore, ...)
+    ↓
+Feature API (documentsApi, authApi, engineApi, adminApi)
+    ↓ switch mock/real (config.js)
+scoringJobsApi / mock/*
+    ↓
+scoringJobsMapper (middleware → format UI)
+    ↓
+Axios client (client.js)
+    ↓
+Middleware API
 ```
 
----
-
-## Perbandingan: Arsitektur Lama vs Baru
-
-| Aspek | Lama (MVP awal) | Baru (target) |
-|-------|-----------------|---------------|
-| Peran FE | Upload + proses + skor | Upload + monitor + tampil hasil |
-| Loading di FE | Ekstrak, hitung, susun | Upload saja |
-| Jumlah halaman | 1 halaman | 3 halaman + detail |
-| Jumlah file | 1 file | Multi file |
-| React Router | Tidak dipakai | Wajib (sidebar + routing) |
-
-```
-LAMA:  [Upload 1 file] → [FE tunggu proses mock] → [FE langsung tampil skor]
-
-BARU:  [Upload multi-file] → [FE upload → toast] → [Backend → Queue → Engine]
-                                                              │
-                                                              ▼
-                                                    [FE baca status & hasil]
-```
+Jangan panggil Axios langsung dari komponen — selalu lewat store → feature API.
 
 ---
 
-## Data Flow
+## Polling & Notifikasi
 
-```
-  ┌──────────────┐
-  │   PDF files  │
-  └──────┬───────┘
-         │ multipart/form-data
-         ▼
-  ┌──────────────┐     metadata      ┌──────────────┐
-  │   Backend    │──────────────────►│    Queue     │
-  │   (storage)  │                   │  (pending)   │
-  └──────────────┘                   └──────┬───────┘
-                                            │
-                                            ▼
-                                     ┌──────────────┐
-                                     │    Engine    │
-                                     └──────┬───────┘
-                                            │ JSON hasil skor
-                                            ▼
-  ┌──────────────┐     GET results     ┌──────────────┐
-  │  Frontend    │◄──────────────────│   Database   │
-  │  (tampilan)  │     GET list        │  (backend)   │
-  └──────────────┘                     └──────────────┘
-```
+| Komponen | Interval | Tujuan |
+|----------|----------|--------|
+| `DocumentWatcher` | 3 detik | Deteksi job selesai → toast + refresh list |
+| `QueuePage` | 5 detik | Refresh tabel antrian |
 
-Frontend **mengirim** file ke atas, **membaca** list & hasil dari bawah. Frontend **tidak** ikut proses OCR/hitung skor di engine.
+Toast muncul saat status berubah ke `done`. Tidak perlu WebSocket.
 
 ---
 
-## Aturan Upload (Frontend)
+## Skor Parsial
 
-| Aturan | Nilai |
-|--------|-------|
-| Jumlah file | Multi-file (tidak dibatasi 1 file) |
-| Batas ukuran | Total semua file maksimal **20 MB** |
-| Format | PDF (utama), JPG/PNG/WEBP (opsional) |
-| Progress yang ditampilkan | Hanya progress upload ke backend |
-| Setelah upload sukses | Toast "Dokumen berhasil diupload" |
-| Proses engine | **TIDAK** ditampilkan di FE |
+Hasil di `/processed/:id` memisahkan:
+
+- `detail[]` — aspek dapat dihitung (**85 bobot**)
+- `tidakDapatDihitung` — aspek Manajemen (**15 bobot**, skor 0)
+
+Detail: [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md)
 
 ---
 
-## Skor Parsial & Aspek Tidak Dapat Dihitung
+## Endpoint
 
-Hasil penilaian di `/processed/:id` memisahkan:
+| Endpoint | Method | Pemanggil | Fungsi |
+|----------|--------|-----------|--------|
+| `/scoring-jobs/upload` | POST | Frontend | Upload file |
+| `/scoring-jobs` | GET | Frontend | List jobs |
+| `/scoring-jobs/{id}` | GET | Frontend | Detail + hasil |
+| `/scoring-jobs/{id}/cancel` | POST | Frontend | Cancel (belum di UI) |
+| `/engine-callback/...` | POST | Engine | Progress, result, failed |
+| `/auth/*` | — | Frontend | Mock — belum di middleware |
+| `/admin/*` | — | Frontend | Mock — belum di middleware |
 
-- `detail[]` → aspek yang dapat dihitung dari dokumen (**85 bobot**)
-- `tidakDapatDihitung` → aspek Manajemen (**15 bobot**), skor = 0
-- `totalSkorParsial` → skor hanya dari aspek dapat dihitung
-- `persentaseParsial` → persentase dari 85 bobot, bukan 100
-
-Lihat [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) untuk rincian komponen Manajemen.
-
----
-
-## Endpoint API
-
-| Endpoint | Method | Fungsi |
-|----------|--------|--------|
-| `/documents/upload` | POST | Upload 1+ file (multipart, ≤20MB) |
-| `/documents?status=queue` | GET | List dokumen dalam antrian |
-| `/documents?status=done` | GET | List dokumen selesai |
-| `/documents/:id/results` | GET | Hasil skor dokumen selesai |
-
-Detail lengkap: [API_CONTRACT.md](./API_CONTRACT.md)
+Kontrak lengkap: [API_CONTRACT.md](./API_CONTRACT.md)
 
 ---
 
-## Tech Stack Terkait Arsitektur
+## Tech Stack
 
 | Tech | Peran |
 |------|-------|
-| React 19 | UI multi-halaman, komponen sidebar & list |
-| React Router DOM | Navigasi `/upload`, `/queue`, `/processed`, `/processed/:id` |
-| Zustand | State upload, list antrian, list selesai |
-| Axios | Upload multi-file + `onUploadProgress` + GET list/hasil |
-| react-dropzone | Multi-file drag & drop dengan validasi |
-| Tailwind CSS | Layout sidebar, tabel, toast/notifikasi |
-| Vite | Build & dev server |
+| React 19 | UI multi-halaman |
+| React Router DOM 7 | Routing + lazy loading |
+| Zustand | State per fitur + UI global |
+| Axios | HTTP ke middleware |
+| react-dropzone | Multi-file upload |
+| Tailwind CSS 4 | Layout sidebar, tabel, toast |
+| Vite 6 | Build & dev server |
 
-Lihat [TECH_STACK.md](./TECH_STACK.md) untuk penjelasan lengkap setiap teknologi.
-
----
-
-## Ringkasan Satu Gambar
-
-```
-           USER
-             │
-      ┌──────┴──────┐
-      │  FRONTEND   │  ← scope pengembangan FE
-      │  ┌────────┐ │
-      │  │Sidebar │ │
-      │  ├────────┤ │
-      │  │ Upload │─┼──► POST file ──────────────┐
-      │  │ Antrian│◄┼──── GET status queued ◄────┤
-      │  │ Selesai│◄┼──── GET status done + skor ◄┤
-      │  └────────┘ │                            │
-      └─────────────┘                            │
-                                                 ▼
-                                          ┌─────────────┐
-                                          │   BACKEND   │
-                                          │  +  QUEUE   │
-                                          │  +  ENGINE  │
-                                          └─────────────┘
-                                          ← di luar scope FE
-```
+Detail: [TECH_STACK.md](./TECH_STACK.md)
 
 ---
 
 ## Dokumen Terkait
 
-- [API_CONTRACT.md](./API_CONTRACT.md) — Kontrak API untuk tim backend
-- [TECH_STACK.md](./TECH_STACK.md) — Penjelasan teknologi & alasan pemilihan
+- [API_CONTRACT.md](./API_CONTRACT.md) — Kontrak middleware & panduan developer
+- [TECH_STACK.md](./TECH_STACK.md) — Penjelasan teknologi
 - [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) — Aspek Manajemen
-- [README.md](./README.md) — Dokumentasi proyek & panduan instalasi
-- [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md) — Struktur folder proyek
+- [README.md](./README.md) — Instalasi & ringkasan
+- [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md) — Struktur folder

@@ -1,7 +1,8 @@
 import { createElement as h, useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AlertCircle, Loader2, LogIn } from 'lucide-react'
-import { useAuthStore } from '@/features/auth/store/useAuthStore'
+import { useAuthStore } from '../store/useAuthStore'
+import { USE_MOCK_AUTH } from '@/shared/api/config'
 
 const btnPrimary =
   'inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
@@ -160,7 +161,7 @@ export function LoginPage() {
             : h(LogIn, { className: 'h-4 w-4' }),
           isLoading ? 'Memproses...' : 'Masuk',
         ),
-        import.meta.env.VITE_USE_MOCK !== 'false' &&
+        USE_MOCK_AUTH &&
           h(
             'div',
             {

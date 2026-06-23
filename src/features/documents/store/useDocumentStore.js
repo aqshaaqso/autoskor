@@ -1,11 +1,7 @@
 import { create } from 'zustand'
-import {
-  getDocuments,
-  getDocumentResults,
-  filterQueueDocuments,
-  filterProcessedDocuments,
-} from '@/features/documents/api/documentsApi'
-import { useUiStore } from '@/shared/store/useUiStore'
+import { getDocuments, getDocumentResults } from '../api/documentsApi'
+import { filterDocumentsByStatus } from '@/shared/api/scoringJobs/scoringJobsMapper'
+import { useUiStore } from '@/shared/store'
 
 export const useDocumentStore = create((set, get) => ({
   queueDocuments: [],
@@ -115,8 +111,8 @@ export const useDocumentStore = create((set, get) => ({
       }
 
       if (statusChanged) {
-        updates.queueDocuments = filterQueueDocuments(allDocuments)
-        updates.processedDocuments = filterProcessedDocuments(allDocuments)
+        updates.queueDocuments = filterDocumentsByStatus(allDocuments, 'queue')
+        updates.processedDocuments = filterDocumentsByStatus(allDocuments, 'processed')
       }
 
       set(updates)

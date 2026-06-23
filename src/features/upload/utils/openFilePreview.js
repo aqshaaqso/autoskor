@@ -1,5 +1,5 @@
-import { canPreviewFile, isPdfFile } from '@/features/upload/utils/filePreview'
-import { registerPreviewFile, revokePreview } from '@/features/upload/utils/previewSession'
+import { canPreviewFile, isPdfFile } from './filePreview'
+import { registerPreviewFile, revokePreview } from './previewSession'
 
 const PDF_OBJECT_URL_TTL_MS = 120_000
 

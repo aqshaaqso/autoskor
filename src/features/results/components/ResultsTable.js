@@ -1,5 +1,5 @@
 import { createElement as h } from 'react'
-import { StatusBadge } from '@/features/results/components/StatusBadge'
+import { StatusBadge } from './StatusBadge'
 import { formatRasio, formatSkor } from '@/shared/utils/format'
 
 function ScoreRow({ row, showAspek, aspekRowSpan }) {

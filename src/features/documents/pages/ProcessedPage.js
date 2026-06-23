@@ -1,8 +1,8 @@
 import { createElement as h, useEffect } from "react";
 import { RefreshCw, Loader2 } from "lucide-react";
-import { useAuthStore } from "@/features/auth/store/useAuthStore";
-import { useDocumentStore } from "@/features/documents/store/useDocumentStore";
-import { DocumentTable } from "@/features/documents/components/DocumentTable";
+import { useAuthStore } from '@/features/auth'
+import { useDocumentStore } from '../store/useDocumentStore'
+import { DocumentTable } from '../components/DocumentTable'
 
 const btnSecondary =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50";

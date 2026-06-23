@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import { UploadArea } from "@/features/upload/components/UploadArea";
+import { UploadArea } from '../components/UploadArea'
 
 export function UploadPage() {
   return h(

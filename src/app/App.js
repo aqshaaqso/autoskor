@@ -1,28 +1,42 @@
-import { createElement as h } from 'react'
+import { createElement as h, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { ProtectedRoute, AdminRoute } from '@/features/auth'
+import { MainLayout } from '@/shared/layout'
+import { PageLoader } from '@/shared/ui/PageLoader'
 import {
-  ProtectedRoute,
-  AdminRoute,
   LoginPage,
-} from '@/features/auth'
-import { UploadPage, FilePreviewPage } from '@/features/upload'
-import {
+  UploadPage,
+  FilePreviewPage,
   QueuePage,
   ProcessedPage,
   ProcessedDetailPage,
-} from '@/features/documents'
-import { EngineDashboardPage } from '@/features/engine'
-import { UserActivityPage } from '@/features/admin'
-import { MainLayout } from '@/shared/layout/MainLayout'
+  EngineDashboardPage,
+  UserActivityPage,
+} from './lazyPages'
+
+function suspensePage(PageComponent) {
+  return h(
+    Suspense,
+    { fallback: h(PageLoader) },
+    h(PageComponent),
+  )
+}
 
 export default function App() {
   return h(
     Routes,
     null,
-    h(Route, { path: '/login', element: h(LoginPage) }),
+    h(Route, {
+      path: '/login',
+      element: suspensePage(LoginPage),
+    }),
     h(Route, {
       path: '/preview/:previewId',
-      element: h(ProtectedRoute, null, h(FilePreviewPage)),
+      element: h(
+        ProtectedRoute,
+        null,
+        suspensePage(FilePreviewPage),
+      ),
     }),
     h(
       Route,
@@ -31,17 +45,17 @@ export default function App() {
         element: h(ProtectedRoute, null, h(MainLayout)),
       },
       h(Route, { index: true, element: h(Navigate, { to: '/upload', replace: true }) }),
-      h(Route, { path: 'upload', element: h(UploadPage) }),
-      h(Route, { path: 'queue', element: h(QueuePage) }),
-      h(Route, { path: 'processed', element: h(ProcessedPage) }),
-      h(Route, { path: 'processed/:id', element: h(ProcessedDetailPage) }),
+      h(Route, { path: 'upload', element: suspensePage(UploadPage) }),
+      h(Route, { path: 'queue', element: suspensePage(QueuePage) }),
+      h(Route, { path: 'processed', element: suspensePage(ProcessedPage) }),
+      h(Route, { path: 'processed/:id', element: suspensePage(ProcessedDetailPage) }),
       h(Route, {
         path: 'engine',
-        element: h(AdminRoute, null, h(EngineDashboardPage)),
+        element: h(AdminRoute, null, suspensePage(EngineDashboardPage)),
       }),
       h(Route, {
         path: 'admin/activity',
-        element: h(AdminRoute, null, h(UserActivityPage)),
+        element: h(AdminRoute, null, suspensePage(UserActivityPage)),
       }),
     ),
     h(Route, { path: '*', element: h(Navigate, { to: '/upload', replace: true }) }),

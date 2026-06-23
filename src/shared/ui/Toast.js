@@ -1,7 +1,7 @@
 import { createElement as h, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, XCircle, X } from 'lucide-react'
-import { useUiStore } from '@/shared/store/useUiStore'
+import { useUiStore } from '@/shared/store'
 
 export function Toast() {
   const { toast, clearToast } = useUiStore()

@@ -1,7 +1,7 @@
 import { createElement as h, useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
-import { useAuthStore } from '@/features/auth/store/useAuthStore'
+import { useAuthStore } from '../store/useAuthStore'
 
 export function ProtectedRoute({ children }) {
   const location = useLocation()
