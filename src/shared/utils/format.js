@@ -21,3 +21,12 @@ export function formatDateTime(value) {
     timeStyle: 'short',
   }).format(new Date(value))
 }
+
+export function formatDateTimeFull(value) {
+  if (!value) return '-'
+
+  return new Intl.DateTimeFormat('id-ID', {
+    dateStyle: 'full',
+    timeStyle: 'medium',
+  }).format(new Date(value))
+}

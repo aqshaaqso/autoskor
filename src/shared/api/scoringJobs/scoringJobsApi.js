@@ -73,6 +73,59 @@ export async function fetchScoringJobResult(id) {
   return mapScoringJobToDocumentResult(job)
 }
 
+export async function cancelScoringJob(id) {
+  const { data } = await api.post(`/scoring-jobs/${id}/cancel`)
+  return data
+}
+
+const CANCELLABLE_MIDDLEWARE_STATUSES = new Set([
+  'uploading',
+  'uploaded',
+  'waiting',
+  'running',
+])
+
+function isCancellableDocument(document) {
+  if (document.middlewareStatus === 'canceled') return false
+  if (CANCELLABLE_MIDDLEWARE_STATUSES.has(document.middlewareStatus)) {
+    return true
+  }
+  return document.status === 'queued' || document.status === 'processing'
+}
+
+export async function clearAllScoringJobs() {
+  const { documents } = await fetchScoringJobs({
+    limit: SCORING_JOBS_LIST_LIMIT,
+  })
+
+  const cancellable = documents.filter(isCancellableDocument)
+
+  if (cancellable.length === 0) {
+    return { cleared: 0, total: documents.length, failed: 0 }
+  }
+
+  const outcomes = await Promise.allSettled(
+    cancellable.map((document) => cancelScoringJob(document.id)),
+  )
+
+  const failed = outcomes.filter((outcome) => outcome.status === 'rejected').length
+  const cleared = cancellable.length - failed
+
+  if (cleared === 0) {
+    throw new Error('Gagal menghapus dokumen. Mungkin sudah tidak dapat dibatalkan.')
+  }
+
+  return { cleared, total: cancellable.length, failed }
+}
+
+export async function fetchScoringJobFile(id) {
+  const { data } = await api.get(`/scoring-jobs/${id}/file`, {
+    params: { disposition: 'inline' },
+    responseType: 'blob',
+  })
+  return data
+}
+
 export async function uploadScoringJobFile(file, onProgress) {
   const formData = new FormData()
   formData.append('files', file)

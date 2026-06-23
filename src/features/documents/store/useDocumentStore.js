@@ -1,5 +1,11 @@
 import { create } from 'zustand'
-import { getDocuments, getDocumentResults } from '../api/documentsApi'
+import {
+  getDocuments,
+  getDocumentResults,
+  cancelDocument,
+  clearAllDocuments as clearAllDocumentsApi,
+} from '../api/documentsApi'
+import { USE_MOCK_DOCUMENTS } from '@/shared/api/config'
 import { filterDocumentsByStatus } from '@/shared/api/scoringJobs/scoringJobsMapper'
 import { useUiStore } from '@/shared/store'
 
@@ -15,6 +21,9 @@ export const useDocumentStore = create((set, get) => ({
   resultError: null,
   documentStatusMap: {},
   hasPendingDocuments: false,
+  isCancelingDocument: false,
+  cancelError: null,
+  isClearingAllDocuments: false,
 
   fetchQueueDocuments: async () => {
     set({ isLoadingQueue: true, listError: null })
@@ -57,6 +66,88 @@ export const useDocumentStore = create((set, get) => ({
   clearDocumentResult: () =>
     set({ documentResult: null, resultError: null, isLoadingResult: false }),
 
+  clearAllDocuments: async () => {
+    set({ isClearingAllDocuments: true, listError: null })
+
+    try {
+      const result = await clearAllDocumentsApi()
+
+      set({
+        queueDocuments: [],
+        ...(USE_MOCK_DOCUMENTS
+          ? {
+              processedDocuments: [],
+              documentResult: null,
+              resultError: null,
+            }
+          : null),
+        documentStatusMap: {},
+        hasPendingDocuments: false,
+        isClearingAllDocuments: false,
+      })
+
+      await Promise.all([
+        get().fetchQueueDocuments(),
+        get().fetchProcessedDocuments(),
+      ])
+
+      const toastMessage = USE_MOCK_DOCUMENTS
+        ? (result?.message ?? 'Semua dokumen berhasil dihapus.')
+        : result?.cleared > 0
+          ? `${result.cleared} dokumen diantrian dibatalkan. Dokumen selesai tetap tersimpan.`
+          : 'Tidak ada dokumen aktif di antrian. Dokumen selesai tetap tersimpan.'
+
+      useUiStore.getState().showToast(toastMessage, 'success')
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ??
+        (err instanceof Error
+          ? err.message
+          : 'Gagal menghapus semua dokumen.')
+
+      set({ isClearingAllDocuments: false, listError: message })
+      throw new Error(message)
+    }
+  },
+
+  cancelQueueDocument: async (id) => {
+    set({ isCancelingDocument: true, cancelError: null })
+
+    try {
+      await cancelDocument(id)
+
+      const { queueDocuments, documentStatusMap } = get()
+      const nextQueue = queueDocuments.filter((doc) => doc.id !== id)
+      const nextStatusMap = { ...documentStatusMap }
+      delete nextStatusMap[id]
+
+      set({
+        queueDocuments: nextQueue,
+        documentStatusMap: nextStatusMap,
+        hasPendingDocuments: nextQueue.some(
+          (doc) => doc.status === 'queued' || doc.status === 'processing',
+        ),
+        isCancelingDocument: false,
+        cancelError: null,
+      })
+
+      useUiStore
+        .getState()
+        .showToast('Dokumen dihapus dari antrian.', 'success')
+
+      void get().fetchQueueDocuments()
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ??
+        (err instanceof Error
+          ? err.message
+          : 'Gagal menghapus dokumen dari antrian.')
+
+      set({ isCancelingDocument: false, cancelError: message })
+      throw new Error(message)
+    }
+  },
+
   checkDocumentStatusUpdates: async () => {
     try {
       const allDocuments = await getDocuments()
@@ -87,6 +178,7 @@ export const useDocumentStore = create((set, get) => ({
 
         if (
           doc.status === 'failed' &&
+          doc.middlewareStatus !== 'canceled' &&
           (previousStatus === 'queued' || previousStatus === 'processing')
         ) {
           const workerLabel = doc.workerId ? ` (${doc.workerId})` : ''

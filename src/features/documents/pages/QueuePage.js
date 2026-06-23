@@ -3,18 +3,32 @@ import { RefreshCw, Loader2 } from "lucide-react";
 import { useAuthStore } from '@/features/auth'
 import { useDocumentStore } from '../store/useDocumentStore'
 import { DocumentTable } from '../components/DocumentTable'
+import { ClearAllDocumentsButton } from '../components/ClearAllDocumentsButton'
+import { useUiStore } from '@/shared/store'
 
 const btnSecondary =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50";
 
 export function QueuePage() {
   const isAdmin = useAuthStore((state) => state.user?.role === "admin");
-  const { queueDocuments, isLoadingQueue, listError, fetchQueueDocuments } =
-    useDocumentStore();
+  const {
+    queueDocuments,
+    isLoadingQueue,
+    listError,
+    fetchQueueDocuments,
+    cancelQueueDocument,
+    isCancelingDocument,
+  } = useDocumentStore();
+  const showToast = useUiStore((state) => state.showToast);
+
+  const fetchProcessedDocuments = useDocumentStore(
+    (state) => state.fetchProcessedDocuments,
+  );
 
   useEffect(() => {
     void fetchQueueDocuments();
-  }, [fetchQueueDocuments]);
+    void fetchProcessedDocuments();
+  }, [fetchQueueDocuments, fetchProcessedDocuments]);
 
   return h(
     "div",
@@ -37,17 +51,22 @@ export function QueuePage() {
         ),
       ),
       h(
-        "button",
-        {
-          type: "button",
-          className: btnSecondary,
-          onClick: () => void fetchQueueDocuments(),
-          disabled: isLoadingQueue,
-        },
-        isLoadingQueue
-          ? h(Loader2, { className: "h-4 w-4 animate-spin" })
-          : h(RefreshCw, { className: "h-4 w-4" }),
-        "Refresh",
+        "div",
+        { className: "flex flex-wrap items-center gap-2" },
+        h(ClearAllDocumentsButton),
+        h(
+          "button",
+          {
+            type: "button",
+            className: btnSecondary,
+            onClick: () => void fetchQueueDocuments(),
+            disabled: isLoadingQueue,
+          },
+          isLoadingQueue
+            ? h(Loader2, { className: "h-4 w-4 animate-spin" })
+            : h(RefreshCw, { className: "h-4 w-4" }),
+          "Refresh",
+        ),
       ),
     ),
     listError &&
@@ -72,6 +91,20 @@ export function QueuePage() {
           documents: queueDocuments,
           showWorker: true,
           showUploader: isAdmin,
+          enableDetailOnClick: true,
+          enableCancelAction: true,
+          isCanceling: isCancelingDocument,
+          onCancelDocument: async (document) => {
+            try {
+              await cancelQueueDocument(document.id);
+            } catch (err) {
+              const message =
+                err instanceof Error
+                  ? err.message
+                  : "Gagal menghapus dokumen dari antrian.";
+              showToast(message, "error");
+            }
+          },
           emptyMessage: "Belum ada dokumen dalam antrian.",
         }),
   );

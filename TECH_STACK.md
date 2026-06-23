@@ -46,6 +46,8 @@ Axios  →  Middleware API  →  Engine (callback)
 | react-dropzone | 14.x | File Upload |
 | lucide-react | 0.511.x | Icons |
 | docx-preview | 0.3.x | Preview dokumen Word |
+| jspdf | 4.x | Generate laporan hasil PDF |
+| jspdf-autotable | 5.x | Tabel skor di laporan PDF |
 | @vitejs/plugin-react | 4.x | Dev Tool |
 
 ---
@@ -64,10 +66,12 @@ Komponen dirender dengan `React.createElement` (alias `h`), **bukan JSX**.
 | `LoginPage` | Autentikasi |
 | `EngineDashboardPage` | Dashboard engine (admin) |
 | `UserActivityPage` | Log aktivitas (admin) |
-| `DocumentTable` | Tabel list dokumen |
+| `DocumentTable` | Tabel list dokumen + hapus antrian |
+| `DocumentDetailModal` | Detail metadata + preview file upload |
 | `DocumentWatcher` | Polling status background |
-| `ResultsTable` / `NonProcessAble` | Tampilan hasil skor |
-| `Toast` / `PageLoader` | Notifikasi & loading |
+| `DownloadResultPdfButton` | Pratinjau & unduh laporan PDF |
+| `ResultsTable` / `TidakDapatDihitungPanel` | Tampilan hasil skor |
+| `Toast` / `PageLoader` / `ConfirmDialog` | Notifikasi, loading, konfirmasi |
 
 Halaman utama di-load lazy via `lazyPages.js`.
 
@@ -114,6 +118,8 @@ Actions utama dokumen: `uploadFiles()`, `fetchQueueDocuments()`, `fetchProcessed
 | POST | `/scoring-jobs/upload` | Upload multi-file |
 | GET | `/scoring-jobs` | List jobs (filter status) |
 | GET | `/scoring-jobs/{id}` | Detail + hasil skor |
+| GET | `/scoring-jobs/{id}/file` | File asli (preview) |
+| POST | `/scoring-jobs/{id}/cancel` | Batalkan job |
 
 Layer: `scoringJobsApi.js` → `documentsApi.js` → `useDocumentStore`.
 
@@ -126,7 +132,7 @@ Kontrak: [API_CONTRACT.md](./API_CONTRACT.md)
 ## react-dropzone — Upload
 
 - Multi-file drag & drop
-- Validasi PDF, JPG, PNG, WEBP
+- Validasi PDF, DOCX
 - Validasi total 20 MB di frontend
 - Disable saat upload berjalan
 
@@ -168,7 +174,9 @@ Layout sidebar + konten, tabel, toast, color grading (Hijau/Kuning/Merah). Tema 
 ### Hasil
 8. `ProcessedPage` → list selesai
 9. Klik → `ProcessedDetailPage` → `GET /scoring-jobs/{id}`
-10. Tampil `ScoreSummary` + `ResultsTable` + `NonProcessAble`
+10. Tampil `ScoreSummary` + `ResultsTable` + `TidakDapatDihitungPanel`
+11. **Pratinjau PDF** → modal iframe (`generateResultPdf.js`)
+12. **Unduh PDF** → `doc.save()` via jsPDF
 
 ---
 

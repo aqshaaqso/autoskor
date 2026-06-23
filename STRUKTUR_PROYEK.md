@@ -24,9 +24,19 @@ autoskor/
 │   │   │   └── index.js
 │   │   ├── documents/
 │   │   │   ├── api/documentsApi.js
-│   │   │   ├── components/           # DocumentTable, DocumentWatcher, ...
+│   │   │   ├── components/
+│   │   │   │   ├── DocumentTable.js
+│   │   │   │   ├── DocumentDetailModal.js
+│   │   │   │   ├── DocumentWatcher.js
+│   │   │   │   ├── ClearAllDocumentsButton.js
+│   │   │   │   ├── DownloadResultPdfButton.js
+│   │   │   │   └── ResultPdfPreviewModal.js
 │   │   │   ├── pages/                # QueuePage, ProcessedPage, ProcessedDetailPage
 │   │   │   ├── store/useDocumentStore.js
+│   │   │   ├── utils/
+│   │   │   │   ├── generateResultPdf.js
+│   │   │   │   ├── documentDetailFields.js
+│   │   │   │   └── openUploadedDocumentPreview.js
 │   │   │   └── index.js
 │   │   ├── results/
 │   │   │   ├── components/           # ResultsTable, ScoreSummary, StatusBadge, NonProcessAble
@@ -52,7 +62,7 @@ autoskor/
 │   │   │   ├── scoringJobs/          # scoringJobsApi, scoringJobsMapper, constants
 │   │   │   └── mock/                 # Mock per domain (auth, documents, admin, engine)
 │   │   ├── layout/                   # MainLayout, Sidebar, UserMenu
-│   │   ├── ui/                       # Toast, PageLoader, StatCard
+│   │   ├── ui/                       # Toast, PageLoader, StatCard, ConfirmDialog
 │   │   ├── store/                    # useUiStore
 │   │   ├── utils/                    # colorGrading, format
 │   │   └── constants/upload.js       # Batas ukuran file

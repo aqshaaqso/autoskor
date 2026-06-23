@@ -2,6 +2,7 @@ import { createElement as h, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import { useDocumentStore } from '../store/useDocumentStore'
+import { DownloadResultPdfButton } from '../components/DownloadResultPdfButton'
 import { ResultsTable, ScoreSummary, TidakDapatDihitungPanel } from '@/features/results'
 
 export function ProcessedDetailPage() {
@@ -55,17 +56,25 @@ export function ProcessedDetailPage() {
         { className: 'space-y-6' },
         h(
           'div',
-          null,
+          {
+            className:
+              'flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between',
+          },
           h(
-            'h1',
-            { className: 'text-2xl font-bold text-slate-900' },
-            'Hasil Penilaian',
+            'div',
+            null,
+            h(
+              'h1',
+              { className: 'text-2xl font-bold text-slate-900' },
+              'Hasil Penilaian',
+            ),
+            h(
+              'p',
+              { className: 'mt-2 text-slate-500' },
+              documentResult.document.fileName,
+            ),
           ),
-          h(
-            'p',
-            { className: 'mt-2 text-slate-500' },
-            documentResult.document.fileName,
-          ),
+          h(DownloadResultPdfButton, { documentResult }),
         ),
         h(ScoreSummary, { results: documentResult.results }),
         h(

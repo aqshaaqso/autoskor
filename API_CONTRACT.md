@@ -113,8 +113,10 @@ GET /scoring-jobs?status={status}&limit={limit}&offset={offset}
 | Halaman | Query `status` |
 |---------|----------------|
 | Antrian (`/queue`) | `uploading,uploaded,waiting,running` |
-| Selesai (`/processed`) | `completed_success,failed,canceled` |
+| Selesai (`/processed`) | `completed_success,failed` |
 | Polling global | Tanpa filter (semua job) |
+
+Job berstatus `canceled` **disembunyikan** di UI (filter client-side di `scoringJobsMapper.js`).
 
 **Response:** `{ data: [...], pagination: { ... } }`
 
@@ -153,7 +155,21 @@ Digunakan untuk halaman detail hasil (`/processed/:id`). Hasil skor ada di `resu
 POST /scoring-jobs/{id}/cancel
 ```
 
-Tersedia di middleware, **belum diimplementasi** di UI frontend.
+Dipakai UI untuk:
+- Tombol **Hapus** per baris di halaman Antrian (`/queue`)
+- Tombol **Hapus Semua** — hanya membatalkan job yang masih aktif (`uploading`, `uploaded`, `waiting`, `running`)
+
+Di mode middleware nyata, **Hapus Semua tidak menghapus** dokumen selesai/gagal di halaman Hasil.
+
+---
+
+### Unduh file asli (preview)
+
+```
+GET /scoring-jobs/{id}/file?disposition=inline
+```
+
+Response: binary file (PDF/DOCX). Dipakai untuk preview dokumen yang sudah di-upload lewat `DocumentDetailModal`.
 
 ---
 
@@ -185,7 +201,7 @@ Didefinisikan di `src/shared/api/middlewareContract.js`:
 | `running` | `processing` | Sedang Diproses |
 | `completed_success` | `done` | Selesai |
 | `failed` | `failed` | Gagal |
-| `canceled` | `failed` | Gagal |
+| `canceled` | `canceled` | Dibatalkan (disembunyikan dari list) |
 
 ### Siklus status
 
@@ -238,7 +254,7 @@ Engine boleh mengirim camelCase atau snake_case — mapper menormalisasi keduany
 |--------|-------|
 | Jumlah file | Multi-file |
 | Batas ukuran total | Maksimal **20 MB** |
-| Format | PDF (utama), JPG, PNG, WEBP |
+| Format | PDF, DOCX |
 | Field name | `files` |
 
 Validasi ada di frontend; backend disarankan validasi ulang.
@@ -253,6 +269,28 @@ Validasi ada di frontend; backend disarankan validasi ulang.
 | Halaman antrian | 5 detik | `GET /scoring-jobs` (filter antrian) | Refresh tabel |
 
 Toast "selesai diproses" muncul saat status berubah ke `done` (`completed_success` di middleware).
+
+---
+
+## Ekspor PDF Hasil Penilaian
+
+Fitur **client-side** di halaman detail (`/processed/:id`) — tidak memanggil endpoint middleware tambahan.
+
+| Tombol | Fungsi |
+|--------|--------|
+| Pratinjau PDF | Buka modal dalam halaman (iframe blob URL) |
+| Unduh PDF | Simpan file `{nama-dokumen}-hasil-penilaian.pdf` |
+
+Generator: `src/features/documents/utils/generateResultPdf.js` (jsPDF + jspdf-autotable).
+
+Isi laporan PDF:
+- Header AutoSkor + referensi Permen KUKM No. 14/2009
+- Metadata dokumen (nama file, tanggal upload)
+- Ringkasan penilaian (skor parsial, persentase, predikat)
+- Tabel detail penilaian (sama seperti `ResultsTable`)
+- Bagian Tidak Dapat Dihitung (aspek Manajemen)
+
+Hanya tersedia untuk dokumen berstatus **selesai** (`done`) yang punya `result.result_data`.
 
 ---
 
@@ -363,6 +401,9 @@ Backend wajib mengizinkan origin frontend (development: `http://localhost:5173`)
 - [x] Polling status + toast notifikasi
 - [x] Mock per domain (auth, admin, engine, dokumen)
 - [x] Switch ke middleware via `VITE_USE_MOCK=false`
+- [x] Hapus dari antrian (`POST /scoring-jobs/{id}/cancel`)
+- [x] Preview file upload (`GET /scoring-jobs/{id}/file`)
+- [x] Unduh & pratinjau laporan hasil PDF (client-side)
 
 ### Uji integrasi
 
@@ -370,8 +411,10 @@ Backend wajib mengizinkan origin frontend (development: `http://localhost:5173`)
 2. Upload 1 file PDF → cek toast sukses + muncul di antrian
 3. Tunggu engine selesai → cek toast "selesai diproses"
 4. Buka halaman Selesai → klik dokumen → cek tabel skor
-5. Upload 2+ file → cek antrian
-6. Upload file > 20 MB → cek error handling
+5. Klik **Pratinjau PDF** / **Unduh PDF** di halaman detail hasil
+6. Hapus 1 dokumen dari antrian → cek hilang dari `/queue`
+7. **Hapus Semua** → cek antrian kosong, dokumen selesai tetap ada
+8. Upload file > 20 MB → cek error handling
 
 ---
 

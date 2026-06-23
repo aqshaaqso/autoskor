@@ -6,13 +6,13 @@ export const JOB_STATUS_TO_UI = {
   running: 'processing',
   completed_success: 'done',
   failed: 'failed',
-  canceled: 'failed',
+  canceled: 'canceled',
 }
 
 /** Map filter halaman frontend → query status middleware (comma-separated) */
 export const UI_STATUS_FILTER_TO_MIDDLEWARE = {
   queue: 'uploading,uploaded,waiting,running',
-  processed: 'completed_success,failed,canceled',
+  processed: 'completed_success,failed',
   done: 'completed_success',
-  failed: 'failed,canceled',
+  failed: 'failed',
 }

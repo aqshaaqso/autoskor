@@ -3,6 +3,7 @@ import { RefreshCw, Loader2 } from "lucide-react";
 import { useAuthStore } from '@/features/auth'
 import { useDocumentStore } from '../store/useDocumentStore'
 import { DocumentTable } from '../components/DocumentTable'
+import { ClearAllDocumentsButton } from '../components/ClearAllDocumentsButton'
 
 const btnSecondary =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50";
@@ -16,9 +17,14 @@ export function ProcessedPage() {
     fetchProcessedDocuments,
   } = useDocumentStore();
 
+  const fetchQueueDocuments = useDocumentStore(
+    (state) => state.fetchQueueDocuments,
+  );
+
   useEffect(() => {
     void fetchProcessedDocuments();
-  }, [fetchProcessedDocuments]);
+    void fetchQueueDocuments();
+  }, [fetchProcessedDocuments, fetchQueueDocuments]);
 
   return h(
     "div",
@@ -41,17 +47,22 @@ export function ProcessedPage() {
         ),
       ),
       h(
-        "button",
-        {
-          type: "button",
-          className: btnSecondary,
-          onClick: () => void fetchProcessedDocuments(),
-          disabled: isLoadingProcessed,
-        },
-        isLoadingProcessed
-          ? h(Loader2, { className: "h-4 w-4 animate-spin" })
-          : h(RefreshCw, { className: "h-4 w-4" }),
-        "Refresh",
+        "div",
+        { className: "flex flex-wrap items-center gap-2" },
+        h(ClearAllDocumentsButton),
+        h(
+          "button",
+          {
+            type: "button",
+            className: btnSecondary,
+            onClick: () => void fetchProcessedDocuments(),
+            disabled: isLoadingProcessed,
+          },
+          isLoadingProcessed
+            ? h(Loader2, { className: "h-4 w-4 animate-spin" })
+            : h(RefreshCw, { className: "h-4 w-4" }),
+          "Refresh",
+        ),
       ),
     ),
     listError &&
