@@ -1,3 +1,4 @@
 export { Toast } from './Toast'
 export { StatCard } from './StatCard'
 export { PageLoader } from './PageLoader'
+export { ConfirmDialog } from './ConfirmDialog'

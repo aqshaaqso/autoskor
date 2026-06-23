@@ -5,4 +5,12 @@ export { DocumentTable } from './components/DocumentTable'
 export { DocumentStatusBadge } from './components/DocumentStatusBadge'
 export { DocumentWatcher } from './components/DocumentWatcher'
 export { useDocumentStore } from './store/useDocumentStore'
-export { uploadDocument, getDocuments, getDocumentResults } from './api/documentsApi'
+export {
+  uploadDocument,
+  getDocuments,
+  getDocumentById,
+  getDocumentResults,
+  cancelDocument,
+  clearAllDocuments,
+  fetchDocumentFile,
+} from './api/documentsApi'

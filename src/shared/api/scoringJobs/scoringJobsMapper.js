@@ -4,6 +4,13 @@ function pickFirstDefined(...values) {
   return values.find((value) => value !== undefined && value !== null)
 }
 
+function getFileExtension(fileName) {
+  if (!fileName || typeof fileName !== 'string') return null
+  const dotIndex = fileName.lastIndexOf('.')
+  if (dotIndex <= 0) return null
+  return fileName.slice(dotIndex + 1).toLowerCase()
+}
+
 export function mapMiddlewareStatus(job) {
   const rawStatus = job?.status?.toLowerCase?.()
   if (rawStatus && MIDDLEWARE_STATUS_TO_UI[rawStatus]) {
@@ -25,15 +32,23 @@ export function mapMiddlewareStatus(job) {
 
 export function mapScoringJobToDocument(job) {
   const status = mapMiddlewareStatus(job)
+  const fileName = job.file?.original_filename ?? 'Dokumen'
 
   return {
     id: job.id,
-    fileName: job.file?.original_filename ?? 'Dokumen',
+    fileName,
+    fileExtension: getFileExtension(fileName),
     fileSize: job.file?.file_size_bytes ?? 0,
+    fileId: job.file?.id ?? null,
+    mimeType:
+      pickFirstDefined(job.file?.mime_type, job.file?.content_type) ?? null,
     status,
+    middlewareStatus: job.status ?? null,
     uploadedAt:
       pickFirstDefined(job.file?.uploaded_at, job.uploaded_at, job.created_at) ??
       null,
+    createdAt: job.created_at ?? null,
+    updatedAt: job.updated_at ?? null,
     uploadedBy: null,
     workerId: job.engine_job_id ?? null,
     processingStartedAt: job.started_at ?? null,
@@ -117,26 +132,32 @@ export function mapScoringJobToDocumentResult(job) {
   }
 }
 
+function isVisibleDocument(doc) {
+  return doc.status !== 'canceled' && doc.middlewareStatus !== 'canceled'
+}
+
 export function filterDocumentsByStatus(documents, status) {
+  const visibleDocuments = documents.filter(isVisibleDocument)
+
   if (status === 'queue') {
-    return documents.filter(
+    return visibleDocuments.filter(
       (doc) => doc.status === 'queued' || doc.status === 'processing',
     )
   }
 
   if (status === 'done') {
-    return documents.filter((doc) => doc.status === 'done')
+    return visibleDocuments.filter((doc) => doc.status === 'done')
   }
 
   if (status === 'failed') {
-    return documents.filter((doc) => doc.status === 'failed')
+    return visibleDocuments.filter((doc) => doc.status === 'failed')
   }
 
   if (status === 'processed') {
-    return documents.filter(
+    return visibleDocuments.filter(
       (doc) => doc.status === 'done' || doc.status === 'failed',
     )
   }
 
-  return documents
+  return visibleDocuments
 }

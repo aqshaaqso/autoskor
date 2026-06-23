@@ -152,7 +152,8 @@ main.js
 | `uploading`, `uploaded`, `waiting` | `queued` |
 | `running` | `processing` |
 | `completed_success` | `done` |
-| `failed`, `canceled` | `failed` |
+| `failed` | `failed` |
+| `canceled` | `canceled` (disembunyikan dari list UI) |
 
 Mapping di `src/shared/api/middlewareContract.js`, diterapkan di `scoringJobsMapper.js`.
 
@@ -163,21 +164,24 @@ Mapping di `src/shared/api/middlewareContract.js`, diterapkan di `scoringJobsMap
 ### Upload (`/upload`)
 
 1. User drag & drop multi-file
-2. Validasi total ≤ 20 MB, format PDF/JPG/PNG/WEBP
+2. Validasi total ≤ 20 MB, format PDF/DOCX
 3. `POST /scoring-jobs/upload` dengan `onUploadProgress`
 4. Toast sukses — FE tidak menunggu engine
 
 ### Antrian (`/queue`)
 
 1. `GET /scoring-jobs?status=uploading,uploaded,waiting,running`
-2. Tabel: nama file, tanggal, status
-3. Auto-refresh 5 detik + refresh manual
+2. Tabel: nama file (klik → modal detail), tanggal, status
+3. Tombol **Hapus** per baris → `POST /scoring-jobs/{id}/cancel`
+4. Auto-refresh 5 detik + refresh manual
 
 ### Selesai (`/processed`)
 
-1. `GET /scoring-jobs?status=completed_success,failed,canceled`
+1. `GET /scoring-jobs?status=completed_success,failed`
 2. Klik dokumen → `/processed/:id`
-3. `GET /scoring-jobs/{id}` → tampilkan `ScoreSummary`, `ResultsTable`, `NonProcessAble`
+3. `GET /scoring-jobs/{id}` → tampilkan `ScoreSummary`, `ResultsTable`, `TidakDapatDihitungPanel`
+4. Tombol **Pratinjau PDF** / **Unduh PDF** → laporan hasil (jsPDF, client-side)
+5. **Hapus Semua** hanya membatalkan antrian aktif — dokumen selesai tetap tampil
 
 ### Engine (`/engine`, admin)
 
@@ -231,6 +235,19 @@ Hasil di `/processed/:id` memisahkan:
 
 Detail: [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md)
 
+### Ekspor PDF (`/processed/:id`)
+
+```
+ProcessedDetailPage
+    → DownloadResultPdfButton
+        → import generateResultPdf.js (lazy chunk)
+        → buildResultPdfDoc() — jsPDF + autotable
+        → Pratinjau: ResultPdfPreviewModal (iframe blob)
+        → Unduh: doc.save('...-hasil-penilaian.pdf')
+```
+
+Tidak ada request HTTP tambahan — data diambil dari `documentResult` yang sudah dimuat.
+
 ---
 
 ## Endpoint
@@ -240,7 +257,8 @@ Detail: [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md)
 | `/scoring-jobs/upload` | POST | Frontend | Upload file |
 | `/scoring-jobs` | GET | Frontend | List jobs |
 | `/scoring-jobs/{id}` | GET | Frontend | Detail + hasil |
-| `/scoring-jobs/{id}/cancel` | POST | Frontend | Cancel (belum di UI) |
+| `/scoring-jobs/{id}/cancel` | POST | Frontend | Batalkan job (antrian) |
+| `/scoring-jobs/{id}/file` | GET | Frontend | Unduh/preview file asli |
 | `/engine-callback/...` | POST | Engine | Progress, result, failed |
 | `/auth/*` | — | Frontend | Mock — belum di middleware |
 | `/admin/*` | — | Frontend | Mock — belum di middleware |

@@ -25,13 +25,14 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 | Fitur | Deskripsi |
 |-------|-----------|
 | Login | Autentikasi user (mock — menunggu endpoint middleware) |
-| Upload multi-file | Drag & drop dokumen RAT (PDF/JPG/PNG/WEBP, maks. 20 MB total) |
-| Preview file | Pratinjau dokumen sebelum/sesudah upload |
-| Antrian | Pantau dokumen yang sedang menunggu/diproses |
-| Hasil selesai | Daftar & detail skor per dokumen |
+| Upload multi-file | Drag & drop dokumen RAT (PDF/DOCX, maks. 20 MB total) |
+| Preview file | Pratinjau PDF di tab baru; DOCX via halaman `/preview/:id` |
+| Antrian | Pantau dokumen menunggu/diproses; hapus per baris; detail metadata |
+| Hasil selesai | Daftar dokumen sukses & gagal; detail skor per dokumen |
+| Unduh / pratinjau PDF | Laporan hasil penilaian (ringkasan + tabel skor) di halaman detail |
 | Skor parsial | Penilaian dari **85 bobot** — aspek Manajemen ditampilkan terpisah |
 | Notifikasi | Toast saat upload sukses & dokumen selesai diproses |
-| Engine dashboard | Monitoring cluster/worker (admin) |
+| Engine dashboard | Monitoring cluster/worker (admin, data dari scoring jobs) |
 | Aktivitas pengguna | Log aktivitas user (admin, mock) |
 | Mock per domain | Auth, admin, dokumen, dan engine bisa di-switch independen |
 
@@ -50,6 +51,7 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 | react-dropzone | Upload drag & drop |
 | lucide-react | Icon |
 | docx-preview | Preview dokumen Word |
+| jspdf + jspdf-autotable | Generate & unduh laporan hasil PDF |
 
 Detail: [TECH_STACK.md](./TECH_STACK.md)
 
@@ -57,8 +59,12 @@ Detail: [TECH_STACK.md](./TECH_STACK.md)
 
 ## Prasyarat & Instalasi
 
-- **Node.js** 18+ (disarankan 20 LTS)
-- **npm** 9+
+Proyek ini **Node.js** — tidak ada `requirements.txt` (itu khusus Python). Dependensi ada di `package.json`.
+
+- **Node.js** 18+ (disarankan 20 LTS) — https://nodejs.org
+- **npm** 9+ (otomatis ikut Node.js)
+
+**Panduan lengkap + troubleshooting:** [PANDUAN_SETUP.md](./PANDUAN_SETUP.md)
 
 ```bash
 cd autoskor
@@ -68,7 +74,9 @@ copy .env.example .env        # Windows
 npm run dev
 ```
 
-Buka `http://localhost:5173`.
+Atau di Windows: jalankan `setup.bat` (otomatis install + buat `.env`).
+
+Buka `http://localhost:5173`. Default `.env.example` pakai **middleware nyata** — butuh akses ke server `172.16.210.244`. Untuk offline/laptop baru, gunakan mode mock (lihat [PANDUAN_SETUP.md](./PANDUAN_SETUP.md)).
 
 **Login mock** (`VITE_USE_MOCK_AUTH=true`):
 
@@ -84,20 +92,16 @@ Buka `http://localhost:5173`.
 Salin `.env.example` ke `.env`:
 
 ```env
+# Mode middleware nyata (default tim)
 VITE_API_BASE_URL=http://172.16.210.244:8000/api
-
-# Dokumen — false = pakai middleware API
 VITE_USE_MOCK=false
-
-# Auth & admin — true = mock (belum ada di middleware)
 VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
-
-# Engine — false = agregasi dari GET /scoring-jobs
 VITE_USE_MOCK_ENGINE=false
-
 VITE_SCORING_JOBS_LIST_LIMIT=100
 ```
+
+Untuk mode mock lokal (tanpa middleware), lihat [PANDUAN_SETUP.md](./PANDUAN_SETUP.md#dua-mode-konfigurasi).
 
 | Variable | Default | Deskripsi |
 |----------|---------|-----------|
@@ -134,11 +138,14 @@ Halaman di-load secara lazy lewat `src/app/lazyPages.js`.
 Frontend terintegrasi dengan **Middleware API** (`/scoring-jobs`):
 
 ```
-POST /scoring-jobs/upload     → upload file
-GET  /scoring-jobs            → list antrian & selesai
-GET  /scoring-jobs/{id}       → detail + hasil skor
-POST /scoring-jobs/{id}/cancel → batalkan job (belum di UI)
+POST /scoring-jobs/upload       → upload file
+GET  /scoring-jobs              → list antrian & selesai
+GET  /scoring-jobs/{id}         → detail + hasil skor
+GET  /scoring-jobs/{id}/file    → unduh file asli (preview)
+POST /scoring-jobs/{id}/cancel  → batalkan job (antrian)
 ```
+
+**Hapus Semua** di mode middleware hanya membatalkan dokumen **aktif di antrian** — dokumen selesai/gagal di halaman Hasil **tidak dihapus**.
 
 Auth (`/auth/*`), admin (`/admin/*`), dan engine status (`/engine/status`) **belum tersedia** di middleware — masih memakai mock.
 
@@ -189,6 +196,7 @@ Alias `@/` → `src/` dikonfigurasi di `vite.config.js`.
 | [TECH_STACK.md](./TECH_STACK.md) | Penjelasan teknologi & alasan pemilihan |
 | [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md) | Struktur folder & konvensi modular |
 | [TIDAK_DAPAT_DIHITUNG.md](./TIDAK_DAPAT_DIHITUNG.md) | Aspek Manajemen yang tidak dapat dihitung |
+| [PANDUAN_SETUP.md](./PANDUAN_SETUP.md) | Setup laptop baru & troubleshooting |
 
 ---
 
