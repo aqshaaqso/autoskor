@@ -1,41 +1,15 @@
-import { createElement as h } from "react";
-
-function getDocumentStatusLabel(status) {
-  switch (status) {
-    case "queued":
-      return "Waiting";
-    case "processing":
-      return "Processing";
-    case "done":
-      return "completed";
-    case "failed":
-      return "Failed";
-    default:
-      return status;
-  }
-}
-
-function getDocumentStatusClasses(status) {
-  switch (status) {
-    case "queued":
-      return "bg-warning-100 text-warning-700 border-warning-500/30";
-    case "processing":
-      return "bg-primary-100 text-primary-700 border-primary-500/30";
-    case "done":
-      return "bg-success-100 text-success-700 border-success-500/30";
-    case "failed":
-      return "bg-danger-100 text-danger-700 border-danger-500/30";
-    default:
-      return "bg-slate-100 text-slate-600 border-slate-300";
-  }
-}
+import { createElement as h } from 'react'
+import {
+  getUiDocumentStatusBadgeClasses,
+  getUiDocumentStatusLabel,
+} from '@/shared/utils/documentStatusLabels'
 
 export function DocumentStatusBadge({ status }) {
   return h(
-    "span",
+    'span',
     {
-      className: `inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getDocumentStatusClasses(status)}`,
+      className: `inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getUiDocumentStatusBadgeClasses(status)}`,
     },
-    getDocumentStatusLabel(status),
-  );
+    getUiDocumentStatusLabel(status),
+  )
 }

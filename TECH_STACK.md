@@ -79,16 +79,16 @@ Halaman utama di-load lazy via `lazyPages.js`.
 
 ## React Router DOM 7 — Navigasi
 
-| Path | Halaman |
-|------|---------|
+| Path | Halaman (label UI) |
+|------|-------------------|
 | `/login` | Login |
-| `/upload` | Upload |
+| `/upload` | Unggah |
 | `/preview/:previewId` | Preview file |
 | `/queue` | Antrian |
 | `/processed` | Selesai |
 | `/processed/:id` | Detail skor |
 | `/engine` | Engine dashboard |
-| `/admin/activity` | Aktivitas user |
+| `/admin/activity` | Aktivitas Pengguna |
 
 Komponen: `BrowserRouter`, `Routes`, `Route`, `NavLink`, `Outlet`, `Navigate`, `useParams`.
 
@@ -172,11 +172,14 @@ Layout sidebar + konten, tabel, toast, color grading (Hijau/Kuning/Merah). Tema 
 7. Auto-refresh antrian (5 detik) & list selesai
 
 ### Hasil
-8. `ProcessedPage` → list selesai
-9. Klik → `ProcessedDetailPage` → `GET /scoring-jobs/{id}`
-10. Tampil `ScoreSummary` + `ResultsTable` + `TidakDapatDihitungPanel`
-11. **Pratinjau PDF** → modal iframe (`generateResultPdf.js`)
-12. **Unduh PDF** → `doc.save()` via jsPDF
+8. `ProcessedPage` → list selesai & gagal
+9. Sukses: **Lihat Hasil** → `ProcessedDetailPage` → `GET /scoring-jobs/{id}`
+10. Gagal: **Lihat Detail** → `DocumentDetailModal` (alasan gagal + metadata)
+11. Tampil `ScoreSummary` + `ResultsTable` + `TidakDapatDihitungPanel` (hanya dokumen sukses)
+12. **Pratinjau PDF** → modal iframe (`generateResultPdf.js`)
+13. **Unduh PDF** → `doc.save()` via jsPDF
+
+Label status UI (badge, engine) terpusat di `shared/utils/documentStatusLabels.js` dan `engineStatusLabels.js` — lihat [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md).
 
 ---
 

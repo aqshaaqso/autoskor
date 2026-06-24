@@ -197,8 +197,39 @@ Tidak perlu install manual satu per satu — cukup `npm install`.
 | Perintah | Fungsi |
 |----------|--------|
 | `npm run dev` | Jalankan development server |
-| `npm run build` | Build production → folder `dist/` |
+| `npm run build` | Build production → folder `dist/` (wajib lulus sebelum deploy) |
 | `npm run preview` | Preview hasil build |
+| `.\scripts\test-middleware.ps1` | Uji koneksi middleware (health, list jobs, download file) |
+
+### Uji middleware (opsional)
+
+Jika laptop terhubung ke LAN/VPN kantor:
+
+```powershell
+.\scripts\test-middleware.ps1
+# atau dengan job ID tertentu:
+.\scripts\test-middleware.ps1 -JobId "uuid-job-di-sini"
+```
+
+Script memanggil `GET /health`, `GET /scoring-jobs`, detail job, dan unduh file. File unduhan disimpan di `scripts/downloaded-*.pdf` (tidak di-commit).
+
+### Verifikasi build
+
+Sebelum push/deploy:
+
+```bash
+npm run build
+```
+
+Jika sukses, folder `dist/` siap di-hosting statis.
+
+---
+
+## Catatan UI
+
+- Navigasi sidebar: **Unggah**, Antrian, Selesai, Engine, Aktivitas Pengguna
+- Tombol refresh: **Muat Ulang** (Antrian, Selesai, Engine, Aktivitas)
+- Label status dokumen/engine terpusat di `src/shared/utils/*StatusLabels.js` — lihat [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md#label-status-terpusat-tetap-modular)
 
 ---
 
@@ -206,3 +237,4 @@ Tidak perlu install manual satu per satu — cukup `npm install`.
 
 - [README.md](./README.md) — Ringkasan proyek
 - [API_CONTRACT.md](./API_CONTRACT.md) — Konfigurasi middleware
+- [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md) — Struktur modular & konvensi import

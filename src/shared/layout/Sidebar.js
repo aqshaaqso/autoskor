@@ -14,7 +14,7 @@ import { SidebarMenuItem } from './SidebarMenuItem'
 import { UserMenu } from './UserMenu'
 
 const menuItems = [
-  { label: 'Upload', path: '/upload', icon: Upload },
+  { label: 'Unggah', path: '/upload', icon: Upload },
   { label: 'Antrian', path: '/queue', icon: ListOrdered },
   { label: 'Selesai', path: '/processed', icon: CheckCircle2 },
   { label: 'Engine', path: '/engine', icon: Cpu, roles: ['admin'] },

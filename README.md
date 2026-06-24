@@ -28,13 +28,15 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 | Upload multi-file | Drag & drop dokumen RAT (PDF/DOCX, maks. 20 MB total) |
 | Preview file | Pratinjau PDF di tab baru; DOCX via halaman `/preview/:id` |
 | Antrian | Pantau dokumen menunggu/diproses; hapus per baris; detail metadata |
-| Hasil selesai | Daftar dokumen sukses & gagal; detail skor per dokumen |
+| Hasil selesai | Daftar dokumen sukses & gagal; **Lihat Hasil** (sukses) atau **Lihat Detail** (gagal) |
 | Unduh / pratinjau PDF | Laporan hasil penilaian (ringkasan + tabel skor) di halaman detail |
 | Skor parsial | Penilaian dari **85 bobot** — aspek Manajemen ditampilkan terpisah |
 | Notifikasi | Toast saat upload sukses & dokumen selesai diproses |
 | Engine dashboard | Monitoring cluster/worker (admin, data dari scoring jobs) |
 | Aktivitas pengguna | Log aktivitas user (admin, mock) |
 | Mock per domain | Auth, admin, dokumen, dan engine bisa di-switch independen |
+| UI Bahasa Indonesia | Label navigasi & status terpusat (`shared/utils/*StatusLabels.js`) |
+| Arsitektur modular | Fitur per domain di `features/` + shared layer (`api`, `layout`, `utils`) |
 
 ---
 
@@ -118,16 +120,16 @@ Restart dev server setelah mengubah `.env`.
 
 ## Halaman & Routing
 
-| Path | Halaman | Akses |
-|------|---------|-------|
+| Path | Halaman (label sidebar) | Akses |
+|------|-------------------------|-------|
 | `/login` | Login | Publik |
-| `/upload` | Upload dokumen | User |
+| `/upload` | Unggah | User |
 | `/preview/:previewId` | Preview file | User |
-| `/queue` | Antrian dokumen | User |
-| `/processed` | Dokumen selesai | User |
+| `/queue` | Antrian | User |
+| `/processed` | Selesai | User |
 | `/processed/:id` | Detail hasil skor | User |
-| `/engine` | Dashboard engine | Admin |
-| `/admin/activity` | Aktivitas pengguna | Admin |
+| `/engine` | Engine | Admin |
+| `/admin/activity` | Aktivitas Pengguna | Admin |
 
 Halaman di-load secara lazy lewat `src/app/lazyPages.js`.
 
@@ -164,6 +166,16 @@ src/
 └── shared/        api, layout, ui, store, utils
 ```
 
+Setiap fitur punya `api/`, `components/`, `pages/`, `store/`, dan barrel `index.js`. Kode lintas fitur ada di `shared/`.
+
+**Label status terpusat** (jangan duplikat di komponen):
+
+| Lapisan | File |
+|---------|------|
+| Mapping API ↔ kode UI | `shared/api/middlewareContract.js` |
+| Label dokumen (ID) | `shared/utils/documentStatusLabels.js` |
+| Label engine/worker (ID) | `shared/utils/engineStatusLabels.js` |
+
 Detail folder & konvensi import: [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md)
 
 ### Path alias
@@ -184,6 +196,7 @@ Alias `@/` → `src/` dikonfigurasi di `vite.config.js`.
 | `npm run dev` | Development server (hot reload) |
 | `npm run build` | Build production ke `dist/` |
 | `npm run preview` | Preview build production |
+| `.\scripts\test-middleware.ps1` | Uji koneksi ke middleware (PowerShell, butuh LAN/VPN) |
 
 ---
 

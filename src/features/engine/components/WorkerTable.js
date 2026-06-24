@@ -1,26 +1,10 @@
 import { createElement as h } from "react";
 import { Loader2 } from "lucide-react";
 import { formatDateTime } from "@/shared/utils/format";
-
-function getWorkerStatusLabel(status) {
-  switch (status) {
-    case "running":
-      return "Running";
-    case "idle":
-    default:
-      return "Idle";
-  }
-}
-
-function getWorkerStatusClasses(status) {
-  switch (status) {
-    case "running":
-      return "bg-primary-100 text-primary-700 border-primary-500/30";
-    case "idle":
-    default:
-      return "bg-success-100 text-success-700 border-success-500/30";
-  }
-}
+import {
+  getWorkerStatusBadgeClasses,
+  getWorkerStatusLabel,
+} from '../utils/workerStatus'
 
 export function WorkerTable({
   workers,
@@ -107,7 +91,7 @@ export function WorkerTable({
                 h(
                   "span",
                   {
-                    className: `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getWorkerStatusClasses(worker.status)}`,
+                    className: `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getWorkerStatusBadgeClasses(worker.status)}`,
                   },
                   worker.status === "running" &&
                     h(Loader2, { className: "h-3 w-3 animate-spin" }),

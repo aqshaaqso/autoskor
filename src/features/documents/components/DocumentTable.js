@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { FileText, ChevronRight, Loader2, Trash2 } from 'lucide-react'
 import { DocumentStatusBadge } from './DocumentStatusBadge'
 import { DocumentDetailModal } from './DocumentDetailModal'
-import { ConfirmDialog } from '@/shared/ui'
+import { ConfirmDialog, TablePagination } from '@/shared/ui'
 import { formatFileSize, formatDateTime } from '@/shared/utils/format'
 
 function canRemoveFromQueue(document) {
@@ -23,6 +23,10 @@ export function DocumentTable({
   onCancelDocument,
   isCanceling = false,
   emptyMessage,
+  pagination = null,
+  onPageChange,
+  onPageSizeChange,
+  isPaginationLoading = false,
 }) {
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [cancelTarget, setCancelTarget] = useState(null)
@@ -70,7 +74,7 @@ export function DocumentTable({
         h(
           'p',
           { className: 'border-b border-slate-100 px-4 py-2 text-xs text-slate-500' },
-          'Klik nama file atau kolom Uploaded untuk melihat detail lengkap.',
+          'Klik nama file atau kolom Diunggah untuk melihat detail lengkap.',
         ),
       h(
         'div',
@@ -97,7 +101,7 @@ export function DocumentTable({
               h(
                 'th',
                 { className: 'px-4 py-3 font-semibold text-slate-700' },
-                'Uploaded',
+                'Diunggah',
               ),
               showUploader &&
                 h(
@@ -278,13 +282,36 @@ export function DocumentTable({
                             'Lihat Hasil',
                             h(ChevronRight, { className: 'h-4 w-4' }),
                           )
-                        : h('span', { className: 'text-sm text-slate-400' }, '-'),
+                        : (enableDetailOnClick || showDetailLink) &&
+                            doc.status === 'failed'
+                          ? h(
+                              'button',
+                              {
+                                type: 'button',
+                                onClick: () => openDocumentDetail(doc),
+                                className:
+                                  'inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700',
+                                title: 'Lihat detail kegagalan',
+                              },
+                              'Lihat Detail',
+                              h(ChevronRight, { className: 'h-4 w-4' }),
+                            )
+                          : h('span', { className: 'text-sm text-slate-400' }, '-'),
                   ),
               ),
             ),
           ),
         ),
       ),
+      pagination &&
+        h(TablePagination, {
+          offset: pagination.offset,
+          limit: pagination.limit,
+          total: pagination.total,
+          onPageChange,
+          onPageSizeChange,
+          isLoading: isPaginationLoading,
+        }),
     ),
     h(DocumentDetailModal, {
       documentId: selectedDocument?.id ?? null,

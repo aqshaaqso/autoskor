@@ -1,17 +1,46 @@
 import { create } from 'zustand'
 import {
   getDocuments,
+  getDocumentList,
   getDocumentResults,
   cancelDocument,
   clearAllDocuments as clearAllDocumentsApi,
 } from '../api/documentsApi'
 import { USE_MOCK_DOCUMENTS } from '@/shared/api/config'
-import { filterDocumentsByStatus } from '@/shared/api/scoringJobs/scoringJobsMapper'
+import { DEFAULT_TABLE_PAGE_SIZE } from '@/shared/constants/pagination'
 import { useUiStore } from '@/shared/store'
+
+function createPaginationState(limit = DEFAULT_TABLE_PAGE_SIZE) {
+  return {
+    offset: 0,
+    limit,
+    total: 0,
+  }
+}
+
+async function fetchDocumentPage(status, pagination) {
+  let result = await getDocumentList(status, pagination)
+
+  if (
+    result.documents.length === 0 &&
+    result.pagination.total > 0 &&
+    pagination.offset > 0
+  ) {
+    const newOffset = Math.max(0, pagination.offset - pagination.limit)
+    result = await getDocumentList(status, {
+      offset: newOffset,
+      limit: pagination.limit,
+    })
+  }
+
+  return result
+}
 
 export const useDocumentStore = create((set, get) => ({
   queueDocuments: [],
   processedDocuments: [],
+  queuePagination: createPaginationState(),
+  processedPagination: createPaginationState(),
   isLoadingQueue: false,
   isLoadingProcessed: false,
   listError: null,
@@ -25,11 +54,28 @@ export const useDocumentStore = create((set, get) => ({
   cancelError: null,
   isClearingAllDocuments: false,
 
-  fetchQueueDocuments: async () => {
+  fetchQueueDocuments: async (options = {}) => {
+    const { queuePagination } = get()
+    const offset = options.offset ?? queuePagination.offset
+    const limit = options.limit ?? queuePagination.limit
+
     set({ isLoadingQueue: true, listError: null })
+
     try {
-      const documents = await getDocuments('queue')
-      set({ queueDocuments: documents, isLoadingQueue: false })
+      const { documents, pagination } = await fetchDocumentPage('queue', {
+        offset,
+        limit,
+      })
+
+      set({
+        queueDocuments: documents,
+        queuePagination: {
+          offset: pagination.offset,
+          limit: pagination.limit,
+          total: pagination.total,
+        },
+        isLoadingQueue: false,
+      })
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Gagal memuat antrian dokumen.'
@@ -37,11 +83,37 @@ export const useDocumentStore = create((set, get) => ({
     }
   },
 
-  fetchProcessedDocuments: async () => {
+  setQueuePage: (page) => {
+    const { limit } = get().queuePagination
+    void get().fetchQueueDocuments({ offset: (page - 1) * limit })
+  },
+
+  setQueuePageSize: (limit) => {
+    void get().fetchQueueDocuments({ offset: 0, limit })
+  },
+
+  fetchProcessedDocuments: async (options = {}) => {
+    const { processedPagination } = get()
+    const offset = options.offset ?? processedPagination.offset
+    const limit = options.limit ?? processedPagination.limit
+
     set({ isLoadingProcessed: true, listError: null })
+
     try {
-      const documents = await getDocuments('processed')
-      set({ processedDocuments: documents, isLoadingProcessed: false })
+      const { documents, pagination } = await fetchDocumentPage('processed', {
+        offset,
+        limit,
+      })
+
+      set({
+        processedDocuments: documents,
+        processedPagination: {
+          offset: pagination.offset,
+          limit: pagination.limit,
+          total: pagination.total,
+        },
+        isLoadingProcessed: false,
+      })
     } catch (err) {
       const message =
         err instanceof Error
@@ -49,6 +121,15 @@ export const useDocumentStore = create((set, get) => ({
           : 'Gagal memuat dokumen selesai.'
       set({ listError: message, isLoadingProcessed: false })
     }
+  },
+
+  setProcessedPage: (page) => {
+    const { limit } = get().processedPagination
+    void get().fetchProcessedDocuments({ offset: (page - 1) * limit })
+  },
+
+  setProcessedPageSize: (limit) => {
+    void get().fetchProcessedDocuments({ offset: 0, limit })
   },
 
   fetchDocumentResults: async (id) => {
@@ -74,9 +155,13 @@ export const useDocumentStore = create((set, get) => ({
 
       set({
         queueDocuments: [],
+        queuePagination: createPaginationState(get().queuePagination.limit),
         ...(USE_MOCK_DOCUMENTS
           ? {
               processedDocuments: [],
+              processedPagination: createPaginationState(
+                get().processedPagination.limit,
+              ),
               documentResult: null,
               resultError: null,
             }
@@ -87,8 +172,8 @@ export const useDocumentStore = create((set, get) => ({
       })
 
       await Promise.all([
-        get().fetchQueueDocuments(),
-        get().fetchProcessedDocuments(),
+        get().fetchQueueDocuments({ offset: 0 }),
+        get().fetchProcessedDocuments({ offset: 0 }),
       ])
 
       const toastMessage = USE_MOCK_DOCUMENTS
@@ -197,19 +282,15 @@ export const useDocumentStore = create((set, get) => ({
         (doc) => doc.status === 'queued' || doc.status === 'processing',
       )
 
-      const updates = {
+      set({
         documentStatusMap: nextStatusMap,
         hasPendingDocuments: hasPending,
-      }
+      })
 
       if (statusChanged) {
-        updates.queueDocuments = filterDocumentsByStatus(allDocuments, 'queue')
-        updates.processedDocuments = filterDocumentsByStatus(allDocuments, 'processed')
-      }
-
-      set(updates)
-
-      if (hasNewlyCompleted || hasNewlyFailed) {
+        void get().fetchQueueDocuments()
+        void get().fetchProcessedDocuments()
+      } else if (hasNewlyCompleted || hasNewlyFailed) {
         void get().fetchProcessedDocuments()
       }
     } catch {

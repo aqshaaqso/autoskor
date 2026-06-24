@@ -1,6 +1,8 @@
 import { USE_MOCK_DOCUMENTS } from '@/shared/api/config'
+import { DEFAULT_TABLE_PAGE_SIZE } from '@/shared/constants/pagination'
 import {
   fetchScoringJobsByStatus,
+  fetchScoringJobsByStatusPage,
   fetchScoringJobById,
   fetchScoringJobResult,
   uploadScoringJobFile,
@@ -12,6 +14,7 @@ import { mapScoringJobToDocument } from '@/shared/api/scoringJobs/scoringJobsMap
 import {
   mockUploadDocument,
   mockGetDocuments,
+  mockGetDocumentList,
   mockGetDocumentById,
   mockGetDocumentResults,
   mockCancelDocument,
@@ -33,6 +36,19 @@ export async function getDocuments(status) {
   }
 
   return fetchScoringJobsByStatus(status)
+}
+
+export async function getDocumentList(status, options = {}) {
+  const {
+    offset = 0,
+    limit = DEFAULT_TABLE_PAGE_SIZE,
+  } = options
+
+  if (USE_MOCK_DOCUMENTS) {
+    return mockGetDocumentList(status, { offset, limit })
+  }
+
+  return fetchScoringJobsByStatusPage(status, { offset, limit })
 }
 
 export async function getDocumentResults(id) {
