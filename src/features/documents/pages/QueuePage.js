@@ -65,7 +65,7 @@ export function QueuePage() {
           isLoadingQueue
             ? h(Loader2, { className: "h-4 w-4 animate-spin" })
             : h(RefreshCw, { className: "h-4 w-4" }),
-          "Refresh",
+          "Muat Ulang",
         ),
       ),
     ),

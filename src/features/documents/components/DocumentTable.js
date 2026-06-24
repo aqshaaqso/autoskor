@@ -70,7 +70,7 @@ export function DocumentTable({
         h(
           'p',
           { className: 'border-b border-slate-100 px-4 py-2 text-xs text-slate-500' },
-          'Klik nama file atau kolom Uploaded untuk melihat detail lengkap.',
+          'Klik nama file atau kolom Diunggah untuk melihat detail lengkap.',
         ),
       h(
         'div',
@@ -97,7 +97,7 @@ export function DocumentTable({
               h(
                 'th',
                 { className: 'px-4 py-3 font-semibold text-slate-700' },
-                'Uploaded',
+                'Diunggah',
               ),
               showUploader &&
                 h(
@@ -278,7 +278,21 @@ export function DocumentTable({
                             'Lihat Hasil',
                             h(ChevronRight, { className: 'h-4 w-4' }),
                           )
-                        : h('span', { className: 'text-sm text-slate-400' }, '-'),
+                        : (enableDetailOnClick || showDetailLink) &&
+                            doc.status === 'failed'
+                          ? h(
+                              'button',
+                              {
+                                type: 'button',
+                                onClick: () => openDocumentDetail(doc),
+                                className:
+                                  'inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700',
+                                title: 'Lihat detail kegagalan',
+                              },
+                              'Lihat Detail',
+                              h(ChevronRight, { className: 'h-4 w-4' }),
+                            )
+                          : h('span', { className: 'text-sm text-slate-400' }, '-'),
                   ),
               ),
             ),

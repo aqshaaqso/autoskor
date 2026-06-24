@@ -11,6 +11,88 @@ function getFileExtension(fileName) {
   return fileName.slice(dotIndex + 1).toLowerCase()
 }
 
+function normalizeUploadedByUser(rawUser) {
+  if (!rawUser || typeof rawUser !== 'object') return null
+
+  const id = pickFirstDefined(rawUser.id, rawUser.user_id, rawUser.userId)
+  const name = pickFirstDefined(
+    rawUser.name,
+    rawUser.full_name,
+    rawUser.fullName,
+    rawUser.display_name,
+    rawUser.displayName,
+    rawUser.username,
+  )
+  const email = pickFirstDefined(rawUser.email, rawUser.user_email, rawUser.userEmail)
+  const role = pickFirstDefined(rawUser.role, rawUser.user_role, rawUser.userRole)
+
+  if (!id && !name && !email) return null
+
+  return {
+    id: id ?? null,
+    name: name ?? email ?? 'Pengguna',
+    email: email ?? null,
+    role: role ?? null,
+  }
+}
+
+function normalizeUploadedBy(job) {
+  const rawUser = pickFirstDefined(
+    job?.uploaded_by,
+    job?.uploadedBy,
+    job?.created_by,
+    job?.createdBy,
+    job?.user,
+    job?.owner,
+    job?.file?.uploaded_by,
+    job?.file?.uploadedBy,
+    job?.file?.created_by,
+    job?.file?.createdBy,
+    job?.file?.user,
+  )
+
+  const normalized = normalizeUploadedByUser(rawUser)
+  if (normalized) return normalized
+
+  const userId = pickFirstDefined(
+    job?.uploaded_by_id,
+    job?.uploadedById,
+    job?.created_by_id,
+    job?.createdById,
+    job?.user_id,
+    job?.userId,
+    job?.file?.uploaded_by_id,
+    job?.file?.user_id,
+  )
+  const userName = pickFirstDefined(
+    job?.uploaded_by_name,
+    job?.uploadedByName,
+    job?.created_by_name,
+    job?.user_name,
+    job?.userName,
+    job?.file?.uploaded_by_name,
+    job?.file?.user_name,
+  )
+  const userEmail = pickFirstDefined(
+    job?.uploaded_by_email,
+    job?.uploadedByEmail,
+    job?.created_by_email,
+    job?.user_email,
+    job?.userEmail,
+    job?.file?.uploaded_by_email,
+    job?.file?.user_email,
+  )
+
+  if (!userId && !userName && !userEmail) return null
+
+  return {
+    id: userId ?? null,
+    name: userName ?? userEmail ?? 'Pengguna',
+    email: userEmail ?? null,
+    role: null,
+  }
+}
+
 export function mapMiddlewareStatus(job) {
   const rawStatus = job?.status?.toLowerCase?.()
   if (rawStatus && MIDDLEWARE_STATUS_TO_UI[rawStatus]) {
@@ -49,7 +131,7 @@ export function mapScoringJobToDocument(job) {
       null,
     createdAt: job.created_at ?? null,
     updatedAt: job.updated_at ?? null,
-    uploadedBy: null,
+    uploadedBy: normalizeUploadedBy(job),
     workerId: job.engine_job_id ?? null,
     processingStartedAt: job.started_at ?? null,
     completedAt: status === 'done' ? job.finished_at ?? null : null,

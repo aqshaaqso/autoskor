@@ -46,7 +46,7 @@ autoskor/
 │   │   │   ├── components/           # ClusterStatusPanel, EngineStatsGrid, WorkerSection, ...
 │   │   │   ├── hooks/
 │   │   │   ├── pages/EngineDashboardPage.js
-│   │   │   ├── utils/
+│   │   │   ├── utils/                # clusterStatus.js, workerStatus.js (facade → shared)
 │   │   │   └── index.js
 │   │   └── admin/
 │   │       ├── api/adminApi.js
@@ -64,7 +64,12 @@ autoskor/
 │   │   ├── layout/                   # MainLayout, Sidebar, UserMenu
 │   │   ├── ui/                       # Toast, PageLoader, StatCard, ConfirmDialog
 │   │   ├── store/                    # useUiStore
-│   │   ├── utils/                    # colorGrading, format
+│   │   ├── utils/
+│   │   │   ├── index.js              # Barrel: format, colorGrading, *StatusLabels
+│   │   │   ├── documentStatusLabels.js
+│   │   │   ├── engineStatusLabels.js
+│   │   │   ├── colorGrading.js
+│   │   │   └── format.js
 │   │   └── constants/upload.js       # Batas ukuran file
 │   ├── main.js
 │   └── index.css
@@ -124,6 +129,18 @@ import { api } from '@/shared/api/client'
 Halaman React → Store Zustand → Feature API → `scoringJobsApi` / mock → Axios.
 
 Jangan panggil Axios langsung dari komponen. Detail: [API_CONTRACT.md](./API_CONTRACT.md#panduan-developer-frontend).
+
+### Label status (terpusat, tetap modular)
+
+| Lapisan | File | Isi |
+|---------|------|-----|
+| API ↔ kode | `shared/api/middlewareContract.js` | Mapping status & filter (`queue` → `waiting,running,…`) |
+| Label dokumen | `shared/utils/documentStatusLabels.js` | Label Indonesia untuk badge & modal detail |
+| Label engine | `shared/utils/engineStatusLabels.js` | Label Indonesia cluster/worker |
+| Facade engine | `features/engine/utils/*.js` | Komponen engine import relatif ke facade fitur |
+| Komponen dokumen | `features/documents/components/` | Import dari `@/shared/utils/documentStatusLabels` |
+
+Ubah teks tampilan → edit file `*StatusLabels.js` di `shared/utils`. Jangan duplikat label di komponen.
 
 ---
 

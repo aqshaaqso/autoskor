@@ -1,21 +1,8 @@
 import { formatFileSize, formatDateTime, formatDateTimeFull } from '@/shared/utils/format'
-
-const MIDDLEWARE_STATUS_LABELS = {
-  uploading: 'Mengupload',
-  uploaded: 'Terupload',
-  waiting: 'Menunggu Antrian',
-  running: 'Sedang Berjalan',
-  completed_success: 'Selesai Sukses',
-  failed: 'Gagal',
-  canceled: 'Dibatalkan',
-}
-
-const UI_STATUS_LABELS = {
-  queued: 'Menunggu',
-  processing: 'Sedang Diproses',
-  done: 'Selesai',
-  failed: 'Gagal',
-}
+import {
+  getMiddlewareStatusLabel,
+  getUiDocumentStatusLabel,
+} from '@/shared/utils/documentStatusLabels'
 
 function formatOptionalDate(value, useFull = false) {
   if (!value) return null
@@ -45,12 +32,11 @@ export function buildDocumentDetailSections(document, options = {}) {
 
   const jobRows = [
     buildRow('ID Job', document.id),
-    buildRow('Status', UI_STATUS_LABELS[document.status] ?? document.status),
+    buildRow('Status', getUiDocumentStatusLabel(document.status)),
     document.middlewareStatus &&
       buildRow(
         'Status Middleware',
-        MIDDLEWARE_STATUS_LABELS[document.middlewareStatus] ??
-          document.middlewareStatus,
+        getMiddlewareStatusLabel(document.middlewareStatus),
       ),
     buildRow('Progress', formatPercent(document.progressPercent)),
     buildRow('Tugas Saat Ini', document.currentTaskType),
