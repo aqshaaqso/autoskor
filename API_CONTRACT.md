@@ -191,17 +191,19 @@ Response: binary file (PDF/DOCX). Dipakai untuk preview dokumen yang sudah di-up
 
 ### Mapping ke UI frontend
 
-Didefinisikan di `src/shared/api/middlewareContract.js`:
+**Kode internal** didefinisikan di `src/shared/api/middlewareContract.js`:
 
-| Middleware | UI | Label |
-|------------|-----|-------|
-| `uploading` | `queued` | Menunggu |
-| `uploaded` | `queued` | Menunggu |
-| `waiting` | `queued` | Menunggu |
-| `running` | `processing` | Sedang Diproses |
-| `completed_success` | `done` | Selesai |
-| `failed` | `failed` | Gagal |
-| `canceled` | `canceled` | Dibatalkan (disembunyikan dari list) |
+| Middleware | UI |
+|------------|-----|
+| `uploading` | `queued` |
+| `uploaded` | `queued` |
+| `waiting` | `queued` |
+| `running` | `processing` |
+| `completed_success` | `done` |
+| `failed` | `failed` |
+| `canceled` | `canceled` (disembunyikan dari list) |
+
+**Label tampilan** (Bahasa Indonesia) di `src/shared/utils/documentStatusLabels.js` — komponen seperti `DocumentStatusBadge` mengimpor dari sini, bukan hardcode string.
 
 ### Siklus status
 
@@ -229,7 +231,12 @@ Mapper di `src/shared/api/scoringJobs/scoringJobsMapper.js` mengubah response mi
 | `status` | string | `queued` / `processing` / `done` / `failed` |
 | `uploadedAt` | string (ISO) | Waktu upload |
 | `failureReason` | string? | Pesan error jika gagal |
+| `uploadedBy` | object? | `{ id, name, email, role }` — diisi mapper jika middleware mengirim field uploader |
 | `progressPercent` | number? | Progress engine |
+
+**Field uploader yang dikenali mapper** (`normalizeUploadedBy`):
+
+`uploaded_by`, `uploadedBy`, `created_by`, `user`, `owner`, `file.uploaded_by`, serta varian flat (`uploaded_by_id`, `uploaded_by_name`, `uploaded_by_email`, dll.). Jika middleware belum mengirim data uploader, kolom **Pengupload** (admin) menampilkan `-`.
 
 ### Objek hasil skor
 
@@ -317,13 +324,18 @@ Engine dashboard saat ini mengagregasi data dari `GET /scoring-jobs` karena `/en
 ```
 shared/api/client.js              → Axios instance
 shared/api/config.js              → Flag mock dari .env
+shared/api/middlewareContract.js  → Mapping status API ↔ kode UI
 shared/api/scoringJobs/
   scoringJobsApi.js               → HTTP call middleware
-  scoringJobsMapper.js            → Response → format UI
+  scoringJobsMapper.js            → Response → format UI (+ uploadedBy)
+shared/utils/documentStatusLabels.js → Label Indonesia dokumen
+shared/utils/engineStatusLabels.js   → Label Indonesia engine
 features/documents/api/documentsApi.js  → Switch mock/real
 features/documents/store/useDocumentStore.js → State Zustand
 Halaman React                     → Panggil store, BUKAN Axios langsung
 ```
+
+Ubah teks status di UI → edit `*StatusLabels.js`. Ubah logika filter/status → edit `middlewareContract.js` + mapper.
 
 ### Menambah endpoint baru
 
@@ -404,17 +416,22 @@ Backend wajib mengizinkan origin frontend (development: `http://localhost:5173`)
 - [x] Hapus dari antrian (`POST /scoring-jobs/{id}/cancel`)
 - [x] Preview file upload (`GET /scoring-jobs/{id}/file`)
 - [x] Unduh & pratinjau laporan hasil PDF (client-side)
+- [x] Label status terpusat (modular per domain)
+- [x] Detail dokumen gagal via modal di halaman Selesai
 
 ### Uji integrasi
 
 1. Set `VITE_USE_MOCK=false` dan `VITE_API_BASE_URL` ke middleware
 2. Upload 1 file PDF → cek toast sukses + muncul di antrian
 3. Tunggu engine selesai → cek toast "selesai diproses"
-4. Buka halaman Selesai → klik dokumen → cek tabel skor
+4. Buka halaman Selesai → klik **Lihat Hasil** → cek tabel skor
 5. Klik **Pratinjau PDF** / **Unduh PDF** di halaman detail hasil
-6. Hapus 1 dokumen dari antrian → cek hilang dari `/queue`
-7. **Hapus Semua** → cek antrian kosong, dokumen selesai tetap ada
-8. Upload file > 20 MB → cek error handling
+6. Untuk dokumen gagal → klik **Lihat Detail** → cek `failureReason` di modal
+7. Hapus 1 dokumen dari antrian → cek hilang dari `/queue`
+8. **Hapus Semua** → cek antrian kosong, dokumen selesai tetap ada
+9. Upload file > 20 MB → cek error handling
+10. `npm run build` → pastikan build sukses
+11. `.\scripts\test-middleware.ps1` → uji health + list jobs (PowerShell)
 
 ---
 

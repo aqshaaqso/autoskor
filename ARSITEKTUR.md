@@ -34,7 +34,7 @@ Frontend **tidak** menghitung skor — hanya mengirim file dan membaca status/ha
 │                     FRONTEND — AutoSkor (React SPA)                     │
 │  ┌──────────┐  ┌─────────────────────────────────────────────────────┐  │
 │  │ Sidebar  │  │              Area Konten (Outlet)                   │  │
-│  │ Upload   │  │  Upload · Antrian · Selesai · Detail · Engine     │  │
+│  │ Unggah   │  │  Unggah · Antrian · Selesai · Detail · Engine   │  │
 │  │ Antrian  │  └─────────────────────────────────────────────────────┘  │
 │  │ Selesai  │                                                           │
 │  │ Engine*  │  Zustand · Axios · React Router · Lazy pages              │
@@ -68,7 +68,7 @@ Frontend **tidak** menghitung skor — hanya mengirim file dan membaca status/ha
 ├────────────┬─────────────────────────────────────────────────────┤
 │  SIDEBAR   │  <Outlet /> — halaman aktif                         │
 │            │                                                     │
-│  Upload    │   /upload                                           │
+│  Unggah    │   /upload                                           │
 │  Antrian   │   /queue                                            │
 │  Selesai   │   /processed                                        │
 │  Engine*   │   /processed/:id  (detail skor)                     │
@@ -157,6 +157,12 @@ main.js
 
 Mapping di `src/shared/api/middlewareContract.js`, diterapkan di `scoringJobsMapper.js`.
 
+Label tampilan Bahasa Indonesia (badge, modal, engine) terpusat di:
+
+- `src/shared/utils/documentStatusLabels.js` — status dokumen
+- `src/shared/utils/engineStatusLabels.js` — status cluster/worker
+- `src/features/engine/utils/clusterStatus.js` & `workerStatus.js` — facade agar komponen engine tidak import langsung ke shared
+
 ---
 
 ## Alur Per Halaman
@@ -171,17 +177,19 @@ Mapping di `src/shared/api/middlewareContract.js`, diterapkan di `scoringJobsMap
 ### Antrian (`/queue`)
 
 1. `GET /scoring-jobs?status=uploading,uploaded,waiting,running`
-2. Tabel: nama file (klik → modal detail), tanggal, status
+2. Tabel: nama file (klik → modal detail), kolom **Diunggah**, status
 3. Tombol **Hapus** per baris → `POST /scoring-jobs/{id}/cancel`
-4. Auto-refresh 5 detik + refresh manual
+4. Auto-refresh 5 detik + tombol **Muat Ulang**
 
 ### Selesai (`/processed`)
 
 1. `GET /scoring-jobs?status=completed_success,failed`
-2. Klik dokumen → `/processed/:id`
-3. `GET /scoring-jobs/{id}` → tampilkan `ScoreSummary`, `ResultsTable`, `TidakDapatDihitungPanel`
-4. Tombol **Pratinjau PDF** / **Unduh PDF** → laporan hasil (jsPDF, client-side)
-5. **Hapus Semua** hanya membatalkan antrian aktif — dokumen selesai tetap tampil
+2. Dokumen **sukses** → tombol **Lihat Hasil** → `/processed/:id`
+3. Dokumen **gagal** → tombol **Lihat Detail** → modal metadata + `failureReason`
+4. Klik nama file / kolom Diunggah juga membuka modal detail (sama seperti antrian)
+5. Halaman detail sukses: `GET /scoring-jobs/{id}` → `ScoreSummary`, `ResultsTable`, `TidakDapatDihitungPanel`
+6. Tombol **Pratinjau PDF** / **Unduh PDF** → laporan hasil (jsPDF, client-side) — hanya untuk status selesai
+7. **Hapus Semua** hanya membatalkan antrian aktif — dokumen selesai/gagal tetap tampil
 
 ### Engine (`/engine`, admin)
 

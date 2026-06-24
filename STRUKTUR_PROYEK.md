@@ -26,6 +26,7 @@ autoskor/
 │   │   │   ├── api/documentsApi.js
 │   │   │   ├── components/
 │   │   │   │   ├── DocumentTable.js
+│   │   │   │   ├── DocumentStatusBadge.js
 │   │   │   │   ├── DocumentDetailModal.js
 │   │   │   │   ├── DocumentWatcher.js
 │   │   │   │   ├── ClearAllDocumentsButton.js
