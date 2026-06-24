@@ -632,9 +632,7 @@ export async function mockUploadDocument(file, onProgress) {
   return { documents: [document], message: "Dokumen berhasil diupload" };
 }
 
-export async function mockGetDocuments(status) {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
+function getMockDocumentsByStatus(status) {
   if (status === "queue") {
     return filterQueueDocuments(mockDocuments);
   }
@@ -652,6 +650,27 @@ export async function mockGetDocuments(status) {
   }
 
   return mockDocuments;
+}
+
+export async function mockGetDocuments(status) {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return getMockDocumentsByStatus(status);
+}
+
+export async function mockGetDocumentList(status, { offset = 0, limit = 10 } = {}) {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const filtered = getMockDocumentsByStatus(status);
+  const total = filtered.length;
+
+  return {
+    documents: filtered.slice(offset, offset + limit),
+    pagination: {
+      offset,
+      limit,
+      total,
+    },
+  };
 }
 
 function releaseWorkerDocument(documentId) {

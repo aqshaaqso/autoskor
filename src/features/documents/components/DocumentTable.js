@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { FileText, ChevronRight, Loader2, Trash2 } from 'lucide-react'
 import { DocumentStatusBadge } from './DocumentStatusBadge'
 import { DocumentDetailModal } from './DocumentDetailModal'
-import { ConfirmDialog } from '@/shared/ui'
+import { ConfirmDialog, TablePagination } from '@/shared/ui'
 import { formatFileSize, formatDateTime } from '@/shared/utils/format'
 
 function canRemoveFromQueue(document) {
@@ -23,6 +23,10 @@ export function DocumentTable({
   onCancelDocument,
   isCanceling = false,
   emptyMessage,
+  pagination = null,
+  onPageChange,
+  onPageSizeChange,
+  isPaginationLoading = false,
 }) {
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [cancelTarget, setCancelTarget] = useState(null)
@@ -299,6 +303,15 @@ export function DocumentTable({
           ),
         ),
       ),
+      pagination &&
+        h(TablePagination, {
+          offset: pagination.offset,
+          limit: pagination.limit,
+          total: pagination.total,
+          onPageChange,
+          onPageSizeChange,
+          isLoading: isPaginationLoading,
+        }),
     ),
     h(DocumentDetailModal, {
       documentId: selectedDocument?.id ?? null,

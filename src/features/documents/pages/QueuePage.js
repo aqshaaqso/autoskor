@@ -13,9 +13,12 @@ export function QueuePage() {
   const isAdmin = useAuthStore((state) => state.user?.role === "admin");
   const {
     queueDocuments,
+    queuePagination,
     isLoadingQueue,
     listError,
     fetchQueueDocuments,
+    setQueuePage,
+    setQueuePageSize,
     cancelQueueDocument,
     isCancelingDocument,
   } = useDocumentStore();
@@ -94,6 +97,10 @@ export function QueuePage() {
           enableDetailOnClick: true,
           enableCancelAction: true,
           isCanceling: isCancelingDocument,
+          pagination: queuePagination,
+          onPageChange: setQueuePage,
+          onPageSizeChange: setQueuePageSize,
+          isPaginationLoading: isLoadingQueue,
           onCancelDocument: async (document) => {
             try {
               await cancelQueueDocument(document.id);

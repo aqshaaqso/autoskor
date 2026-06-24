@@ -1,4 +1,5 @@
 import { api } from '@/shared/api/client'
+import { DEFAULT_TABLE_PAGE_SIZE } from '@/shared/constants/pagination'
 import {
   SCORING_JOBS_LIST_LIMIT,
   UI_FILTER_TO_MIDDLEWARE_STATUS,
@@ -52,15 +53,35 @@ export async function fetchScoringJobs(options = {}) {
 }
 
 export async function fetchScoringJobsByStatus(status) {
+  const { documents } = await fetchScoringJobsByStatusPage(status)
+  return documents
+}
+
+export async function fetchScoringJobsByStatusPage(status, options = {}) {
+  const {
+    offset = 0,
+    limit = DEFAULT_TABLE_PAGE_SIZE,
+  } = options
   const middlewareStatus = getMiddlewareStatusQuery(status)
 
   if (middlewareStatus) {
-    const { documents } = await fetchScoringJobs({ status })
-    return documents
+    return fetchScoringJobs({ status, offset, limit })
   }
 
-  const { documents } = await fetchScoringJobs()
-  return filterDocumentsByStatus(documents, status)
+  const { documents } = await fetchScoringJobs({
+    offset: 0,
+    limit: SCORING_JOBS_LIST_LIMIT,
+  })
+  const filtered = filterDocumentsByStatus(documents, status)
+
+  return {
+    documents: filtered.slice(offset, offset + limit),
+    pagination: {
+      offset,
+      limit,
+      total: filtered.length,
+    },
+  }
 }
 
 export async function fetchScoringJobById(id) {

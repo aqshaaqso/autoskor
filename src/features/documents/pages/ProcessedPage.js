@@ -12,9 +12,12 @@ export function ProcessedPage() {
   const isAdmin = useAuthStore((state) => state.user?.role === "admin");
   const {
     processedDocuments,
+    processedPagination,
     isLoadingProcessed,
     listError,
     fetchProcessedDocuments,
+    setProcessedPage,
+    setProcessedPageSize,
   } = useDocumentStore();
 
   const fetchQueueDocuments = useDocumentStore(
@@ -88,6 +91,10 @@ export function ProcessedPage() {
           showDetailLink: true,
           enableDetailOnClick: true,
           showUploader: isAdmin,
+          pagination: processedPagination,
+          onPageChange: setProcessedPage,
+          onPageSizeChange: setProcessedPageSize,
+          isPaginationLoading: isLoadingProcessed,
           emptyMessage: "Belum ada dokumen selesai atau gagal diproses.",
         }),
   );
