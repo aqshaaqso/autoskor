@@ -3,12 +3,11 @@ import { Eye, FileText, X } from 'lucide-react'
 import { canPreviewFile } from '../utils/filePreview'
 import { openFilePreview } from '../utils/openFilePreview'
 import { formatFileSize } from '@/shared/utils/format'
-import { MAX_FILE_UPLOAD_BYTES } from '@/shared/constants/upload'
+import {
+  isFileWithinUploadLimit,
+  MAX_FILE_UPLOAD_BYTES,
+} from '@/shared/constants/upload'
 import { btnGhost, btnPrimary } from './buttonStyles'
-
-function isFileTooLarge(file) {
-  return file.size > MAX_FILE_UPLOAD_BYTES
-}
 
 export function SelectedFilesList({
   selectedFiles,
@@ -79,10 +78,10 @@ export function SelectedFilesList({
               h(
                 'p',
                 {
-                  className: `text-xs ${isFileTooLarge(file) ? 'text-danger-600' : 'text-slate-500'}`,
+                  className: `text-xs ${!isFileWithinUploadLimit(file) ? 'text-danger-600' : 'text-slate-500'}`,
                 },
-                isFileTooLarge(file)
-                  ? `Melebihi ${formatFileSize(MAX_FILE_UPLOAD_BYTES)}`
+                !isFileWithinUploadLimit(file)
+                  ? `Melebihi ${formatFileSize(MAX_FILE_UPLOAD_BYTES)} per file`
                   : formatFileSize(file.size),
               ),
             ),
@@ -123,7 +122,7 @@ export function SelectedFilesList({
         {
           type: 'button',
           className: btnPrimary,
-          disabled: selectedFiles.some(isFileTooLarge),
+          disabled: selectedFiles.some((file) => !isFileWithinUploadLimit(file)),
           onClick: () => uploadFiles(),
         },
         isUploadProcessorRunning ? 'Tambah ke Antrian' : 'Konfirmasi Upload',

@@ -34,7 +34,7 @@ export function UploadDropzone({ getRootProps, getInputProps, isDragActive, drop
     h(
       'p',
       { className: 'mt-4 text-sm text-slate-400' },
-      `Format: PDF, DOCX · Maksimal ${formatFileSize(MAX_FILE_UPLOAD_BYTES)} total per unggahan`,
+      `Format: PDF, DOCX · Maksimal ${formatFileSize(MAX_FILE_UPLOAD_BYTES)} per file`,
     ),
   )
 }

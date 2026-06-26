@@ -3,8 +3,7 @@ import { uploadDocument, useDocumentStore } from '@/features/documents'
 import { getApiErrorMessage } from '@/shared/api/client'
 import { useUiStore } from '@/shared/store'
 import {
-  getTotalFileBytes,
-  isBatchWithinUploadLimit,
+  findOversizedFile,
   MAX_FILE_UPLOAD_BYTES,
 } from '@/shared/constants/upload'
 import { formatFileSize } from '@/shared/utils/format'
@@ -56,9 +55,10 @@ export const useUploadStore = create((set, get) => ({
     const { selectedFiles } = get()
     if (selectedFiles.length === 0) return
 
-    if (!isBatchWithinUploadLimit(selectedFiles)) {
+    const oversizedFile = findOversizedFile(selectedFiles)
+    if (oversizedFile) {
       set({
-        uploadError: `Total ukuran file (${formatFileSize(getTotalFileBytes(selectedFiles))}) melebihi batas ${formatFileSize(MAX_FILE_UPLOAD_BYTES)}.`,
+        uploadError: `File "${oversizedFile.name}" melebihi batas ${formatFileSize(MAX_FILE_UPLOAD_BYTES)} per file.`,
       })
       return
     }

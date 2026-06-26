@@ -6,18 +6,12 @@ import { ACCEPTED_TYPES } from '../constants'
 import { UploadProgress } from './UploadProgress'
 import { formatFileSize } from '@/shared/utils/format'
 import {
-  getTotalFileBytes,
-  isBatchWithinUploadLimit,
+  isFileWithinUploadLimit,
   MAX_FILE_UPLOAD_BYTES,
 } from '@/shared/constants/upload'
 import { UploadDropzone } from './UploadDropzone'
 import { UploadQueueList } from './UploadQueueList'
 import { SelectedFilesList } from './SelectedFilesList'
-
-function getBatchLimitError(files) {
-  if (isBatchWithinUploadLimit(files)) return null
-  return `Total ukuran file (${formatFileSize(getTotalFileBytes(files))}) melebihi batas ${formatFileSize(MAX_FILE_UPLOAD_BYTES)}.`
-}
 
 export function UploadArea() {
   const {
@@ -45,18 +39,22 @@ export function UploadArea() {
           'Beberapa file ditolak karena format tidak didukung. Gunakan PDF atau DOCX.'
       }
 
-      const nextSelection = [...selectedFiles, ...acceptedFiles]
-      const batchLimitError = getBatchLimitError(nextSelection)
+      const validFiles = acceptedFiles.filter(isFileWithinUploadLimit)
+      const oversizedFiles = acceptedFiles.filter(
+        (file) => !isFileWithinUploadLimit(file),
+      )
 
-      if (batchLimitError) {
-        uploadError = batchLimitError
-      } else if (acceptedFiles.length > 0) {
-        setSelectedFiles(nextSelection)
+      if (oversizedFiles.length > 0) {
+        uploadError = `File "${oversizedFiles[0].name}" melebihi batas ${formatFileSize(MAX_FILE_UPLOAD_BYTES)} per file.`
+      }
+
+      if (validFiles.length > 0) {
+        setSelectedFiles([...selectedFiles, ...validFiles])
       }
 
       if (uploadError) {
         useUploadStore.setState({ uploadError })
-      } else if (acceptedFiles.length > 0) {
+      } else if (validFiles.length > 0) {
         useUploadStore.setState({ uploadError: null })
       }
     },

@@ -16,7 +16,7 @@ export function UploadPage() {
       h(
         "p",
         { className: "mt-2 text-slate-500" },
-        "Unggah dokumen RAT (PDF/DOCX), maksimal 20 MB total per unggahan. Preview dibuka di tab browser baru.",
+        "Unggah dokumen RAT (PDF/DOCX), maksimal 20 MB per file. Preview dibuka di tab browser baru.",
       ),
     ),
     h(UploadArea),
