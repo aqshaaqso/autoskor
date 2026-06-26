@@ -1,7 +1,13 @@
 import { create } from 'zustand'
 import { uploadDocument, useDocumentStore } from '@/features/documents'
+import { getApiErrorMessage } from '@/shared/api/client'
 import { useUiStore } from '@/shared/store'
-import { MAX_FILE_UPLOAD_BYTES } from '@/shared/constants/upload'
+import {
+  getTotalFileBytes,
+  isBatchWithinUploadLimit,
+  MAX_FILE_UPLOAD_BYTES,
+} from '@/shared/constants/upload'
+import { formatFileSize } from '@/shared/utils/format'
 
 function createUploadQueueItem(file) {
   return {
@@ -50,12 +56,9 @@ export const useUploadStore = create((set, get) => ({
     const { selectedFiles } = get()
     if (selectedFiles.length === 0) return
 
-    const oversizedFile = selectedFiles.find(
-      (file) => file.size > MAX_FILE_UPLOAD_BYTES,
-    )
-    if (oversizedFile) {
+    if (!isBatchWithinUploadLimit(selectedFiles)) {
       set({
-        uploadError: `File "${oversizedFile.name}" melebihi batas 20 MB per file.`,
+        uploadError: `Total ukuran file (${formatFileSize(getTotalFileBytes(selectedFiles))}) melebihi batas ${formatFileSize(MAX_FILE_UPLOAD_BYTES)}.`,
       })
       return
     }
@@ -109,10 +112,10 @@ export const useUploadStore = create((set, get) => ({
           }))
           useDocumentStore.setState({ hasPendingDocuments: true })
         } catch (err) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : 'Gagal mengupload dokumen. Silakan coba lagi.'
+          const message = getApiErrorMessage(
+            err,
+            'Gagal mengupload dokumen. Silakan coba lagi.',
+          )
 
           set((state) => ({
             uploadQueue: state.uploadQueue.map((item) =>

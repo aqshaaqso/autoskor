@@ -20,6 +20,11 @@ export function ProcessedDetailPage() {
     return () => clearDocumentResult()
   }, [id, fetchDocumentResults, clearDocumentResult])
 
+  const hasSidePanel = Boolean(documentResult?.results?.tidakDapatDihitung)
+  const resultsGridClass = hasSidePanel
+    ? 'grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start'
+    : 'grid gap-6'
+
   return h(
     'div',
     { className: 'mx-auto max-w-7xl px-6 py-8' },
@@ -50,7 +55,44 @@ export function ProcessedDetailPage() {
         h(AlertCircle, { className: 'mt-0.5 h-5 w-5 shrink-0 text-danger-600' }),
         h('p', { className: 'text-sm text-danger-700' }, resultError),
       ),
-    documentResult &&
+    documentResult?.isFailed &&
+      h(
+        'div',
+        { className: 'space-y-4' },
+        h(
+          'div',
+          null,
+          h(
+            'h1',
+            { className: 'text-2xl font-bold text-slate-900' },
+            'Penilaian Gagal',
+          ),
+          h(
+            'p',
+            { className: 'mt-2 text-slate-500' },
+            documentResult.document.fileName,
+          ),
+        ),
+        h(
+          'div',
+          {
+            className:
+              'rounded-xl border border-danger-200 bg-danger-50 p-6 shadow-sm',
+          },
+          h(
+            'h3',
+            { className: 'text-sm font-semibold text-danger-800' },
+            'Dokumen tidak berhasil diproses',
+          ),
+          h(
+            'p',
+            { className: 'mt-2 text-sm text-danger-700' },
+            documentResult.document.failureReason ??
+              'Worker gagal memproses dokumen ini. Silakan unggah ulang atau hubungi administrator.',
+          ),
+        ),
+      ),
+    documentResult?.results &&
       h(
         'div',
         { className: 'space-y-6' },
@@ -79,11 +121,12 @@ export function ProcessedDetailPage() {
         h(ScoreSummary, { results: documentResult.results }),
         h(
           'div',
-          { className: 'grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start' },
+          { className: resultsGridClass },
           h(ResultsTable, { detail: documentResult.results.detail }),
-          h(TidakDapatDihitungPanel, {
-            data: documentResult.results.tidakDapatDihitung,
-          }),
+          hasSidePanel &&
+            h(TidakDapatDihitungPanel, {
+              data: documentResult.results.tidakDapatDihitung,
+            }),
         ),
       ),
   )

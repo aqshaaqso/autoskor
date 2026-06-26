@@ -1,6 +1,7 @@
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { renderAsync } from 'docx-preview'
+import DOMPurify from 'dompurify'
 import { AlertCircle, FileText, Loader2, X } from 'lucide-react'
 import {
   getFileTypeLabel,
@@ -53,6 +54,7 @@ export function FilePreviewPage() {
           ignoreWidth: false,
           ignoreHeight: false,
         })
+        container.innerHTML = DOMPurify.sanitize(container.innerHTML)
         setIsLoading(false)
       } catch (err) {
         setPreviewError(

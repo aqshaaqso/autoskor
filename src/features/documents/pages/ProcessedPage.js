@@ -14,7 +14,7 @@ export function ProcessedPage() {
     processedDocuments,
     processedPagination,
     isLoadingProcessed,
-    listError,
+    processedListError,
     fetchProcessedDocuments,
     setProcessedPage,
     setProcessedPageSize,
@@ -68,14 +68,14 @@ export function ProcessedPage() {
         ),
       ),
     ),
-    listError &&
+    processedListError &&
       h(
         "div",
         {
           className:
             "mb-4 rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700",
         },
-        listError,
+        processedListError,
       ),
     isLoadingProcessed && processedDocuments.length === 0
       ? h(

@@ -5,13 +5,18 @@ import { useUploadStore } from '../store/useUploadStore'
 import { ACCEPTED_TYPES } from '../constants'
 import { UploadProgress } from './UploadProgress'
 import { formatFileSize } from '@/shared/utils/format'
-import { MAX_FILE_UPLOAD_BYTES } from '@/shared/constants/upload'
+import {
+  getTotalFileBytes,
+  isBatchWithinUploadLimit,
+  MAX_FILE_UPLOAD_BYTES,
+} from '@/shared/constants/upload'
 import { UploadDropzone } from './UploadDropzone'
 import { UploadQueueList } from './UploadQueueList'
 import { SelectedFilesList } from './SelectedFilesList'
 
-function isFileTooLarge(file) {
-  return file.size > MAX_FILE_UPLOAD_BYTES
+function getBatchLimitError(files) {
+  if (isBatchWithinUploadLimit(files)) return null
+  return `Total ukuran file (${formatFileSize(getTotalFileBytes(files))}) melebihi batas ${formatFileSize(MAX_FILE_UPLOAD_BYTES)}.`
 }
 
 export function UploadArea() {
@@ -33,22 +38,27 @@ export function UploadArea() {
 
   const onDrop = useCallback(
     (acceptedFiles, rejectedFiles) => {
+      let uploadError = null
+
       if (rejectedFiles.length > 0) {
-        useUploadStore.setState({
-          uploadError: 'Format file tidak didukung. Gunakan PDF atau DOCX.',
-        })
-        return
+        uploadError =
+          'Beberapa file ditolak karena format tidak didukung. Gunakan PDF atau DOCX.'
       }
 
-      const oversizedFiles = acceptedFiles.filter(isFileTooLarge)
-      if (oversizedFiles.length > 0) {
-        useUploadStore.setState({
-          uploadError: `File "${oversizedFiles[0].name}" melebihi batas ${formatFileSize(MAX_FILE_UPLOAD_BYTES)} per file.`,
-        })
-        return
+      const nextSelection = [...selectedFiles, ...acceptedFiles]
+      const batchLimitError = getBatchLimitError(nextSelection)
+
+      if (batchLimitError) {
+        uploadError = batchLimitError
+      } else if (acceptedFiles.length > 0) {
+        setSelectedFiles(nextSelection)
       }
 
-      setSelectedFiles([...selectedFiles, ...acceptedFiles])
+      if (uploadError) {
+        useUploadStore.setState({ uploadError })
+      } else if (acceptedFiles.length > 0) {
+        useUploadStore.setState({ uploadError: null })
+      }
     },
     [selectedFiles, setSelectedFiles],
   )

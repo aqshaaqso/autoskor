@@ -4,7 +4,9 @@ import {
   getCurrentUser,
   logout as apiLogout,
 } from '../api/authApi'
-import { getStoredToken, setStoredToken } from '@/shared/api/client'
+import { getApiErrorMessage, getStoredToken, setStoredToken } from '@/shared/api/client'
+
+let initializePromise = null
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -14,21 +16,27 @@ export const useAuthStore = create((set) => ({
   loginError: null,
 
   initialize: async () => {
-    const token = getStoredToken()
-    if (!token) {
-      set({ isInitializing: false })
-      return
-    }
+    if (initializePromise) return initializePromise
 
-    set({ token, isInitializing: true })
+    initializePromise = (async () => {
+      const token = getStoredToken()
+      if (!token) {
+        set({ isInitializing: false })
+        return
+      }
 
-    try {
-      const user = await getCurrentUser()
-      set({ user, isInitializing: false })
-    } catch {
-      setStoredToken(null)
-      set({ token: null, user: null, isInitializing: false })
-    }
+      set({ token, isInitializing: true })
+
+      try {
+        const user = await getCurrentUser()
+        set({ user, isInitializing: false })
+      } catch {
+        setStoredToken(null)
+        set({ token: null, user: null, isInitializing: false })
+      }
+    })()
+
+    return initializePromise
   },
 
   login: async (email, password) => {
@@ -40,8 +48,7 @@ export const useAuthStore = create((set) => ({
       set({ token, user, isLoading: false, loginError: null })
       return true
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Login gagal. Silakan coba lagi.'
+      const message = getApiErrorMessage(err, 'Login gagal. Silakan coba lagi.')
       set({ loginError: message, isLoading: false })
       return false
     }

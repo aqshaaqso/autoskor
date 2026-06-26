@@ -41,7 +41,11 @@ export function UserActivityPage() {
   }, [loadOverview])
 
   useEffect(() => {
-    const interval = setInterval(() => void loadOverview(), POLL_INTERVAL_MS)
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadOverview()
+      }
+    }, POLL_INTERVAL_MS)
     return () => clearInterval(interval)
   }, [loadOverview])
 

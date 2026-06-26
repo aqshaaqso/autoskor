@@ -1,7 +1,14 @@
 import { canPreviewFile, isPdfFile } from './filePreview'
 import { registerPreviewFile, revokePreview } from './previewSession'
 
-const PDF_OBJECT_URL_TTL_MS = 120_000
+function revokeObjectUrlWhenWindowCloses(objectUrl, previewWindow) {
+  const intervalId = window.setInterval(() => {
+    if (previewWindow.closed) {
+      URL.revokeObjectURL(objectUrl)
+      window.clearInterval(intervalId)
+    }
+  }, 1000)
+}
 
 export function openFilePreview(file) {
   if (!canPreviewFile(file)) return
@@ -15,7 +22,7 @@ export function openFilePreview(file) {
       return
     }
 
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), PDF_OBJECT_URL_TTL_MS)
+    revokeObjectUrlWhenWindowCloses(objectUrl, openedWindow)
     return
   }
 

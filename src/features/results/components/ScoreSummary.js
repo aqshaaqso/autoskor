@@ -1,6 +1,6 @@
 import { createElement as h } from 'react'
 import { getPredikatClasses } from '@/shared/utils/colorGrading'
-import { formatSkor } from '@/shared/utils/format'
+import { formatPersentase, formatSkor } from '@/shared/utils/format'
 
 export function ScoreSummary({ results }) {
   const predikatClass = getPredikatClasses(results.predikat)
@@ -47,7 +47,7 @@ export function ScoreSummary({ results }) {
         h(
           'p',
           { className: 'mt-1 text-3xl font-bold text-primary-600' },
-          `${results.persentaseParsial.toFixed(1)}%`,
+          formatPersentase(results.persentaseParsial),
         ),
       ),
       h(

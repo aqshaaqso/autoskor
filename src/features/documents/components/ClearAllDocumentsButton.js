@@ -9,8 +9,10 @@ const btnDanger =
   'inline-flex items-center justify-center gap-2 rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-sm font-medium text-danger-700 transition-colors hover:bg-danger-100 disabled:cursor-not-allowed disabled:opacity-60'
 
 export function ClearAllDocumentsButton() {
-  const queueDocuments = useDocumentStore((state) => state.queueDocuments)
-  const processedDocuments = useDocumentStore((state) => state.processedDocuments)
+  const queuePagination = useDocumentStore((state) => state.queuePagination)
+  const processedPagination = useDocumentStore(
+    (state) => state.processedPagination,
+  )
   const clearAllDocuments = useDocumentStore((state) => state.clearAllDocuments)
   const isClearingAllDocuments = useDocumentStore(
     (state) => state.isClearingAllDocuments,
@@ -18,8 +20,8 @@ export function ClearAllDocumentsButton() {
   const showToast = useUiStore((state) => state.showToast)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const queueCount = queueDocuments.length
-  const processedCount = processedDocuments.length
+  const queueCount = queuePagination.total
+  const processedCount = processedPagination.total
   const totalDocuments = queueCount + processedCount
 
   if (totalDocuments === 0) return null

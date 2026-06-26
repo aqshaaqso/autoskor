@@ -9,13 +9,15 @@ import { useUiStore } from '@/shared/store'
 const btnSecondary =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50";
 
+const QUEUE_POLL_INTERVAL_MS = 5000;
+
 export function QueuePage() {
   const isAdmin = useAuthStore((state) => state.user?.role === "admin");
   const {
     queueDocuments,
     queuePagination,
     isLoadingQueue,
-    listError,
+    queueListError,
     fetchQueueDocuments,
     setQueuePage,
     setQueuePageSize,
@@ -32,6 +34,14 @@ export function QueuePage() {
     void fetchQueueDocuments();
     void fetchProcessedDocuments();
   }, [fetchQueueDocuments, fetchProcessedDocuments]);
+
+  useEffect(() => {
+    const interval = setInterval(
+      () => void fetchQueueDocuments(),
+      QUEUE_POLL_INTERVAL_MS,
+    );
+    return () => clearInterval(interval);
+  }, [fetchQueueDocuments]);
 
   return h(
     "div",
@@ -72,14 +82,14 @@ export function QueuePage() {
         ),
       ),
     ),
-    listError &&
+    queueListError &&
       h(
         "div",
         {
           className:
             "mb-4 rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700",
         },
-        listError,
+        queueListError,
       ),
     isLoadingQueue && queueDocuments.length === 0
       ? h(

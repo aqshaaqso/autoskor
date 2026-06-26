@@ -10,6 +10,15 @@ const btnPrimary =
 const inputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20'
 
+const ALLOWED_REDIRECT_PATTERN =
+  /^\/(upload|queue|processed|preview|engine|admin\/activity)(\/|$)/
+
+function getSafeRedirectPath(pathname) {
+  if (typeof pathname !== 'string') return '/upload'
+  if (!pathname.startsWith('/') || pathname.startsWith('//')) return '/upload'
+  return ALLOWED_REDIRECT_PATTERN.test(pathname) ? pathname : '/upload'
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -20,10 +29,12 @@ export function LoginPage() {
   const initialize = useAuthStore((state) => state.initialize)
   const login = useAuthStore((state) => state.login)
 
-  const [email, setEmail] = useState('admin@koperasi.id')
+  const [email, setEmail] = useState(
+    import.meta.env.DEV && USE_MOCK_AUTH ? 'admin@koperasi.id' : '',
+  )
   const [password, setPassword] = useState('')
 
-  const from = location.state?.from?.pathname ?? '/upload'
+  const from = getSafeRedirectPath(location.state?.from?.pathname)
 
   useEffect(() => {
     void initialize()

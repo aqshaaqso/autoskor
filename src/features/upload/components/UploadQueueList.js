@@ -33,7 +33,7 @@ export function UploadQueueList({
       h(
         'p',
         { className: 'text-sm text-slate-500' },
-        'File berhasi diupload. Kamu tetap bisa menambah dokumen baru.',
+        'File berhasil diupload. Kamu tetap bisa menambah dokumen baru.',
       ),
     ),
     h(

@@ -34,7 +34,21 @@ export function getStatusClasses(status) {
         bg: 'bg-slate-50',
         border: 'border-slate-200',
       }
+    default:
+      return {
+        badge: 'bg-slate-100 text-slate-600 border-slate-300',
+        text: 'text-slate-600',
+        bg: 'bg-slate-50',
+        border: 'border-slate-200',
+      }
   }
+}
+
+export function getPredikatFromPersentase(persentase) {
+  if (persentase >= 90) return 'SEHAT'
+  if (persentase >= 70) return 'CUKUP SEHAT'
+  if (persentase >= 50) return 'KURANG SEHAT'
+  return 'TIDAK SEHAT'
 }
 
 export function getPredikatClasses(predikat) {

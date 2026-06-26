@@ -1,10 +1,23 @@
+function toFiniteNumber(value, fallback = 0) {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : fallback
+}
+
 export function formatRasio(value) {
   if (typeof value === 'string') return value
-  return `${value.toFixed(2)}%`
+  return `${toFiniteNumber(value).toFixed(2)}%`
 }
 
 export function formatSkor(value) {
-  return value.toFixed(2)
+  return toFiniteNumber(value).toFixed(2)
+}
+
+export function formatNumber(value, decimals = 2) {
+  return toFiniteNumber(value).toFixed(decimals)
+}
+
+export function formatPersentase(value, decimals = 1) {
+  return `${toFiniteNumber(value).toFixed(decimals)}%`
 }
 
 export function formatFileSize(bytes) {

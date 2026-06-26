@@ -3,12 +3,16 @@ import {
   getDocuments,
   getDocumentList,
   getDocumentResults,
+  getDocumentById,
   cancelDocument,
   clearAllDocuments as clearAllDocumentsApi,
 } from '../api/documentsApi'
+import { getApiErrorMessage } from '@/shared/api/client'
 import { USE_MOCK_DOCUMENTS } from '@/shared/api/config'
 import { DEFAULT_TABLE_PAGE_SIZE } from '@/shared/constants/pagination'
 import { useUiStore } from '@/shared/store'
+
+const MAX_STATUS_MAP_ENTRIES = 200
 
 function createPaginationState(limit = DEFAULT_TABLE_PAGE_SIZE) {
   return {
@@ -16,6 +20,24 @@ function createPaginationState(limit = DEFAULT_TABLE_PAGE_SIZE) {
     limit,
     total: 0,
   }
+}
+
+function pruneDocumentStatusMap(statusMap, activeDocuments) {
+  const activeIds = new Set(activeDocuments.map((doc) => doc.id))
+  const prunedMap = { ...statusMap }
+
+  for (const id of Object.keys(prunedMap)) {
+    if (!activeIds.has(id)) {
+      delete prunedMap[id]
+    }
+  }
+
+  const entries = Object.entries(prunedMap)
+  if (entries.length <= MAX_STATUS_MAP_ENTRIES) {
+    return prunedMap
+  }
+
+  return Object.fromEntries(entries.slice(entries.length - MAX_STATUS_MAP_ENTRIES))
 }
 
 async function fetchDocumentPage(status, pagination) {
@@ -43,7 +65,8 @@ export const useDocumentStore = create((set, get) => ({
   processedPagination: createPaginationState(),
   isLoadingQueue: false,
   isLoadingProcessed: false,
-  listError: null,
+  queueListError: null,
+  processedListError: null,
 
   documentResult: null,
   isLoadingResult: false,
@@ -59,7 +82,7 @@ export const useDocumentStore = create((set, get) => ({
     const offset = options.offset ?? queuePagination.offset
     const limit = options.limit ?? queuePagination.limit
 
-    set({ isLoadingQueue: true, listError: null })
+    set({ isLoadingQueue: true, queueListError: null })
 
     try {
       const { documents, pagination } = await fetchDocumentPage('queue', {
@@ -77,9 +100,8 @@ export const useDocumentStore = create((set, get) => ({
         isLoadingQueue: false,
       })
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Gagal memuat antrian dokumen.'
-      set({ listError: message, isLoadingQueue: false })
+      const message = getApiErrorMessage(err, 'Gagal memuat antrian dokumen.')
+      set({ queueListError: message, isLoadingQueue: false })
     }
   },
 
@@ -97,7 +119,7 @@ export const useDocumentStore = create((set, get) => ({
     const offset = options.offset ?? processedPagination.offset
     const limit = options.limit ?? processedPagination.limit
 
-    set({ isLoadingProcessed: true, listError: null })
+    set({ isLoadingProcessed: true, processedListError: null })
 
     try {
       const { documents, pagination } = await fetchDocumentPage('processed', {
@@ -115,11 +137,8 @@ export const useDocumentStore = create((set, get) => ({
         isLoadingProcessed: false,
       })
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Gagal memuat dokumen selesai.'
-      set({ listError: message, isLoadingProcessed: false })
+      const message = getApiErrorMessage(err, 'Gagal memuat dokumen selesai.')
+      set({ processedListError: message, isLoadingProcessed: false })
     }
   },
 
@@ -134,12 +153,29 @@ export const useDocumentStore = create((set, get) => ({
 
   fetchDocumentResults: async (id) => {
     set({ isLoadingResult: true, resultError: null, documentResult: null })
+
     try {
       const data = await getDocumentResults(id)
       set({ documentResult: data, isLoadingResult: false })
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Gagal memuat hasil penilaian.'
+      try {
+        const document = await getDocumentById(id)
+        if (document.status === 'failed') {
+          set({
+            documentResult: {
+              document,
+              results: null,
+              isFailed: true,
+            },
+            isLoadingResult: false,
+          })
+          return
+        }
+      } catch {
+        // Lanjut ke pesan error default
+      }
+
+      const message = getApiErrorMessage(err, 'Gagal memuat hasil penilaian.')
       set({ resultError: message, isLoadingResult: false })
     }
   },
@@ -148,7 +184,7 @@ export const useDocumentStore = create((set, get) => ({
     set({ documentResult: null, resultError: null, isLoadingResult: false }),
 
   clearAllDocuments: async () => {
-    set({ isClearingAllDocuments: true, listError: null })
+    set({ isClearingAllDocuments: true, queueListError: null })
 
     try {
       const result = await clearAllDocumentsApi()
@@ -184,13 +220,8 @@ export const useDocumentStore = create((set, get) => ({
 
       useUiStore.getState().showToast(toastMessage, 'success')
     } catch (err) {
-      const message =
-        err?.response?.data?.message ??
-        (err instanceof Error
-          ? err.message
-          : 'Gagal menghapus semua dokumen.')
-
-      set({ isClearingAllDocuments: false, listError: message })
+      const message = getApiErrorMessage(err, 'Gagal menghapus semua dokumen.')
+      set({ isClearingAllDocuments: false, queueListError: message })
       throw new Error(message)
     }
   },
@@ -201,13 +232,17 @@ export const useDocumentStore = create((set, get) => ({
     try {
       await cancelDocument(id)
 
-      const { queueDocuments, documentStatusMap } = get()
+      const { queueDocuments, queuePagination, documentStatusMap } = get()
       const nextQueue = queueDocuments.filter((doc) => doc.id !== id)
       const nextStatusMap = { ...documentStatusMap }
       delete nextStatusMap[id]
 
       set({
         queueDocuments: nextQueue,
+        queuePagination: {
+          ...queuePagination,
+          total: Math.max(0, queuePagination.total - 1),
+        },
         documentStatusMap: nextStatusMap,
         hasPendingDocuments: nextQueue.some(
           (doc) => doc.status === 'queued' || doc.status === 'processing',
@@ -222,12 +257,10 @@ export const useDocumentStore = create((set, get) => ({
 
       void get().fetchQueueDocuments()
     } catch (err) {
-      const message =
-        err?.response?.data?.message ??
-        (err instanceof Error
-          ? err.message
-          : 'Gagal menghapus dokumen dari antrian.')
-
+      const message = getApiErrorMessage(
+        err,
+        'Gagal menghapus dokumen dari antrian.',
+      )
       set({ isCancelingDocument: false, cancelError: message })
       throw new Error(message)
     }
@@ -256,7 +289,11 @@ export const useDocumentStore = create((set, get) => ({
           useUiStore.getState().showToast(
             `Dokumen "${doc.fileName}" selesai diproses.`,
             'success',
-            { documentId: doc.id, linkTo: `/processed/${doc.id}`, linkLabel: 'Lihat Hasil →' },
+            {
+              documentId: doc.id,
+              linkTo: `/processed/${doc.id}`,
+              linkLabel: 'Lihat Hasil →',
+            },
           )
           hasNewlyCompleted = true
         }
@@ -270,7 +307,11 @@ export const useDocumentStore = create((set, get) => ({
           useUiStore.getState().showToast(
             `Worker gagal memproses "${doc.fileName}"${workerLabel}.`,
             'error',
-            { documentId: doc.id, linkTo: '/processed', linkLabel: 'Lihat di Selesai →' },
+            {
+              documentId: doc.id,
+              linkTo: '/processed',
+              linkLabel: 'Lihat di Selesai →',
+            },
           )
           hasNewlyFailed = true
         }
@@ -283,7 +324,7 @@ export const useDocumentStore = create((set, get) => ({
       )
 
       set({
-        documentStatusMap: nextStatusMap,
+        documentStatusMap: pruneDocumentStatusMap(nextStatusMap, allDocuments),
         hasPendingDocuments: hasPending,
       })
 
@@ -293,8 +334,10 @@ export const useDocumentStore = create((set, get) => ({
       } else if (hasNewlyCompleted || hasNewlyFailed) {
         void get().fetchProcessedDocuments()
       }
-    } catch {
-      // Abaikan error polling — tidak mengganggu UX utama
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn('Polling status dokumen gagal:', err)
+      }
     }
   },
 }))

@@ -9,14 +9,23 @@ import {
   Users,
 } from 'lucide-react'
 import { useAuthStore } from '@/features/auth'
+import { UI_PAGE_FILTERS } from '@/shared/api/middlewareContract'
 import { useUiStore } from '@/shared/store'
 import { SidebarMenuItem } from './SidebarMenuItem'
 import { UserMenu } from './UserMenu'
 
 const menuItems = [
   { label: 'Unggah', path: '/upload', icon: Upload },
-  { label: 'Antrian', path: '/queue', icon: ListOrdered },
-  { label: 'Selesai', path: '/processed', icon: CheckCircle2 },
+  {
+    label: UI_PAGE_FILTERS.queue.label,
+    path: UI_PAGE_FILTERS.queue.path,
+    icon: ListOrdered,
+  },
+  {
+    label: UI_PAGE_FILTERS.processed.label,
+    path: UI_PAGE_FILTERS.processed.path,
+    icon: CheckCircle2,
+  },
   { label: 'Engine', path: '/engine', icon: Cpu, roles: ['admin'] },
   {
     label: 'Aktivitas Pengguna',

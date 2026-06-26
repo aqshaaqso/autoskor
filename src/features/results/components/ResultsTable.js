@@ -1,6 +1,6 @@
 import { createElement as h } from 'react'
 import { StatusBadge } from './StatusBadge'
-import { formatRasio, formatSkor } from '@/shared/utils/format'
+import { formatNumber, formatRasio, formatSkor } from '@/shared/utils/format'
 
 function ScoreRow({ row, showAspek, aspekRowSpan }) {
   return h(
@@ -21,7 +21,11 @@ function ScoreRow({ row, showAspek, aspekRowSpan }) {
       { className: 'px-4 py-3 text-right font-mono text-slate-700' },
       formatRasio(row.nilaiRasio),
     ),
-    h('td', { className: 'px-4 py-3 text-right text-slate-700' }, row.nilai),
+    h(
+      'td',
+      { className: 'px-4 py-3 text-right text-slate-700' },
+      formatNumber(row.nilai, 0),
+    ),
     h('td', { className: 'px-4 py-3 text-right text-slate-700' }, row.bobot),
     h(
       'td',
@@ -31,7 +35,7 @@ function ScoreRow({ row, showAspek, aspekRowSpan }) {
     h(
       'td',
       { className: 'px-4 py-3 text-right text-slate-700' },
-      `${row.persentaseMaks}%`,
+      `${formatNumber(row.persentaseMaks, 0)}%`,
     ),
     h(
       'td',
@@ -41,13 +45,29 @@ function ScoreRow({ row, showAspek, aspekRowSpan }) {
   )
 }
 
-export function ResultsTable({ detail }) {
-  const aspekRowSpans = detail.reduce((acc, row) => {
-    acc[row.aspek] = (acc[row.aspek] ?? 0) + 1
-    return acc
-  }, {})
+function getConsecutiveAspekMeta(detail) {
+  return detail.map((row, index) => {
+    const isGroupStart =
+      index === 0 || detail[index - 1].aspek !== row.aspek
 
-  const aspekRendered = new Set()
+    if (!isGroupStart) {
+      return { showAspek: false, aspekRowSpan: 1 }
+    }
+
+    let aspekRowSpan = 1
+    while (
+      index + aspekRowSpan < detail.length &&
+      detail[index + aspekRowSpan].aspek === row.aspek
+    ) {
+      aspekRowSpan += 1
+    }
+
+    return { showAspek: true, aspekRowSpan }
+  })
+}
+
+export function ResultsTable({ detail = [] }) {
+  const aspekMeta = getConsecutiveAspekMeta(detail)
 
   return h(
     'div',
@@ -106,14 +126,13 @@ export function ResultsTable({ detail }) {
           'tbody',
           null,
           detail.map((row, index) => {
-            const showAspek = !aspekRendered.has(row.aspek)
-            if (showAspek) aspekRendered.add(row.aspek)
+            const { showAspek, aspekRowSpan } = aspekMeta[index]
 
             return h(ScoreRow, {
               key: `${row.aspek}-${row.komponen}-${index}`,
               row,
               showAspek,
-              aspekRowSpan: aspekRowSpans[row.aspek],
+              aspekRowSpan,
             })
           }),
         ),

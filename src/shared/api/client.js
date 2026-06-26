@@ -28,3 +28,36 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && getStoredToken()) {
+      setStoredToken(null)
+
+      const path = window.location.pathname
+      if (!path.startsWith('/login')) {
+        window.location.assign('/login')
+      }
+    }
+
+    return Promise.reject(error)
+  },
+)
+
+export function getApiErrorMessage(error, fallback = 'Terjadi kesalahan.') {
+  if (!error) return fallback
+
+  const data = error?.response?.data
+  if (typeof data?.message === 'string' && data.message.trim()) {
+    return data.message
+  }
+  if (typeof data?.detail === 'string' && data.detail.trim()) {
+    return data.detail
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return fallback
+}

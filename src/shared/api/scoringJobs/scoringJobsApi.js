@@ -10,6 +10,8 @@ import {
   mapScoringJobToDocumentResult,
 } from './scoringJobsMapper'
 
+const MAX_PAGINATED_JOB_FETCH = 10_000
+
 function extractJobList(payload) {
   if (Array.isArray(payload?.data)) return payload.data
   if (Array.isArray(payload)) return payload
@@ -52,7 +54,38 @@ export async function fetchScoringJobs(options = {}) {
   }
 }
 
+export async function fetchAllScoringJobDocuments(options = {}) {
+  const { status } = options
+  const limit = SCORING_JOBS_LIST_LIMIT
+  const collected = []
+  let offset = 0
+
+  while (offset < MAX_PAGINATED_JOB_FETCH) {
+    const { documents, pagination } = await fetchScoringJobs({
+      offset,
+      limit,
+      status,
+    })
+
+    if (documents.length === 0) break
+
+    collected.push(...documents)
+    offset += documents.length
+
+    const total = pagination?.total
+    if (documents.length < limit) break
+    if (typeof total === 'number' && offset >= total) break
+  }
+
+  return collected
+}
+
 export async function fetchScoringJobsByStatus(status) {
+  if (status == null || status === '') {
+    const documents = await fetchAllScoringJobDocuments()
+    return filterDocumentsByStatus(documents)
+  }
+
   const { documents } = await fetchScoringJobsByStatusPage(status)
   return documents
 }
@@ -68,10 +101,7 @@ export async function fetchScoringJobsByStatusPage(status, options = {}) {
     return fetchScoringJobs({ status, offset, limit })
   }
 
-  const { documents } = await fetchScoringJobs({
-    offset: 0,
-    limit: SCORING_JOBS_LIST_LIMIT,
-  })
+  const documents = await fetchAllScoringJobDocuments()
   const filtered = filterDocumentsByStatus(documents, status)
 
   return {
@@ -115,10 +145,7 @@ function isCancellableDocument(document) {
 }
 
 export async function clearAllScoringJobs() {
-  const { documents } = await fetchScoringJobs({
-    limit: SCORING_JOBS_LIST_LIMIT,
-  })
-
+  const documents = await fetchAllScoringJobDocuments()
   const cancellable = documents.filter(isCancellableDocument)
 
   if (cancellable.length === 0) {
@@ -152,7 +179,6 @@ export async function uploadScoringJobFile(file, onProgress) {
   formData.append('files', file)
 
   const { data } = await api.post('/scoring-jobs/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (event) => {
       if (!event.total) return
       const progress = Math.round((event.loaded / event.total) * 100)
