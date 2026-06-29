@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import { getPredikatClasses } from "@/shared/utils/colorGrading";
 import { getCooperativeGeneralInfo } from "@/shared/utils/extractedIndicators";
-import { formatPersentase, formatSkor } from "@/shared/utils/format";
+import { formatSkor } from "@/shared/utils/format";
 
 function PartialScoreMetric({
   label,
@@ -40,13 +40,6 @@ export function ScoreSummary({ results, extractedIndicators }) {
     (row) => Number(row.skor ?? 0) > 0,
   ).length;
   const totalIndicatorCount = detail.length;
-  const fillPercent =
-    bobotParsial > 0
-      ? Math.min(
-          100,
-          (Number(results.totalSkorParsial ?? 0) / bobotParsial) * 100,
-        )
-      : 0;
 
   return h(
     "div",
@@ -121,29 +114,6 @@ export function ScoreSummary({ results, extractedIndicators }) {
             className: "mb-3 text-center text-sm font-medium text-slate-500",
           },
           "Skor Parsial (Dapat Dihitung)",
-        ),
-        h(
-          "div",
-          { className: "mb-4" },
-          h(
-            "div",
-            {
-              className: "h-2 overflow-hidden rounded-full bg-slate-200",
-            },
-            h("div", {
-              className: "h-full rounded-full bg-primary-500 transition-all",
-              style: { width: `${fillPercent}%` },
-            }),
-          ),
-          h(
-            "p",
-            {
-              className:
-                "mt-1.5 text-center text-xs font-medium text-primary-700",
-            },
-            formatPersentase(results.persentaseParsial),
-            " dari bobot dapat dihitung",
-          ),
         ),
         h(
           "div",
