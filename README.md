@@ -26,7 +26,7 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 |-------|-----------|
 | Login | Autentikasi user (mock — menunggu endpoint middleware) |
 | Upload multi-file | Drag & drop dokumen RAT (PDF/DOCX, maks. 20 MB total) |
-| Preview file | Pratinjau PDF di tab baru; DOCX via halaman `/preview/:id` |
+| Preview file | File lokal: `/preview/:previewId` · file ter-upload: `/preview/document/:documentId` |
 | Antrian | Pantau dokumen menunggu/diproses; hapus per baris; detail metadata |
 | Hasil selesai | Daftar dokumen sukses & gagal; **Lihat Hasil** (sukses) atau **Lihat Detail** (gagal) |
 | Unduh / pratinjau PDF | Laporan hasil penilaian (ringkasan + tabel skor) di halaman detail |
@@ -34,7 +34,7 @@ Ditulis dengan **JavaScript murni** — tanpa TypeScript, tanpa JSX. UI dirender
 | Notifikasi | Toast saat upload sukses & dokumen selesai diproses |
 | Engine dashboard | Monitoring cluster/worker (admin, data dari scoring jobs) |
 | Aktivitas pengguna | Log aktivitas user (admin, mock) |
-| Mock per domain | Auth, admin, dokumen, dan engine bisa di-switch independen |
+| Mock auth & admin | `VITE_USE_MOCK_AUTH` / `VITE_USE_MOCK_ADMIN` — dokumen & engine selalu middleware nyata |
 | UI Bahasa Indonesia | Label navigasi & status terpusat (`shared/utils/*StatusLabels.js`) |
 | Arsitektur modular | Fitur per domain di `features/` + shared layer (`api`, `layout`, `utils`) |
 
@@ -78,7 +78,7 @@ npm run dev
 
 Atau di Windows: jalankan `setup.bat` (otomatis install + buat `.env`).
 
-Buka `http://localhost:5173`. Default `.env.example` pakai **middleware nyata** — butuh akses ke server `172.16.210.244`. Untuk offline/laptop baru, gunakan mode mock (lihat [PANDUAN_SETUP.md](./PANDUAN_SETUP.md)).
+Buka `http://localhost:5173`. Default `.env.example` mengarah ke middleware lokal — sesuaikan `VITE_API_BASE_URL` dengan server yang dapat diakses (lihat [PANDUAN_SETUP.md](./PANDUAN_SETUP.md)).
 
 **Login mock** (`VITE_USE_MOCK_AUTH=true`):
 
@@ -96,23 +96,21 @@ Salin `.env.example` ke `.env`:
 ```env
 # Mode middleware nyata (default tim)
 VITE_API_BASE_URL=http://172.16.210.244:8000/api
-VITE_USE_MOCK=false
 VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
-VITE_USE_MOCK_ENGINE=false
 VITE_SCORING_JOBS_LIST_LIMIT=100
 ```
 
-Untuk mode mock lokal (tanpa middleware), lihat [PANDUAN_SETUP.md](./PANDUAN_SETUP.md#dua-mode-konfigurasi).
+Konfigurasi auth/admin mock vs middleware nyata: [PANDUAN_SETUP.md](./PANDUAN_SETUP.md#dua-mode-konfigurasi).
 
 | Variable | Default | Deskripsi |
 |----------|---------|-----------|
 | `VITE_API_BASE_URL` | `http://localhost:8000/api` | Base URL sampai `/api` (tanpa trailing slash) |
-| `VITE_USE_MOCK` | `true` | `false` = dokumen pakai middleware nyata |
-| `VITE_USE_MOCK_AUTH` | `true` | `false` = auth pakai backend nyata |
-| `VITE_USE_MOCK_ADMIN` | `true` | `false` = admin pakai backend nyata |
-| `VITE_USE_MOCK_ENGINE` | `false` | `true` = engine dashboard pakai mock lokal |
+| `VITE_USE_MOCK_AUTH` | `true` (dev) | `false` = auth pakai backend nyata |
+| `VITE_USE_MOCK_ADMIN` | `true` (dev) | `false` = admin pakai backend nyata |
 | `VITE_SCORING_JOBS_LIST_LIMIT` | `100` | Limit pagination list scoring jobs |
+
+Dokumen & engine **selalu** memakai middleware nyata di `VITE_API_BASE_URL`. Tidak ada flag mock global.
 
 Restart dev server setelah mengubah `.env`.
 
@@ -124,7 +122,8 @@ Restart dev server setelah mengubah `.env`.
 |------|-------------------------|-------|
 | `/login` | Login | Publik |
 | `/upload` | Unggah | User |
-| `/preview/:previewId` | Preview file | User |
+| `/preview/:previewId` | Preview file lokal | User |
+| `/preview/document/:documentId` | Preview file ter-upload | User |
 | `/queue` | Antrian | User |
 | `/processed` | Selesai | User |
 | `/processed/:id` | Detail hasil skor | User |
@@ -149,7 +148,7 @@ POST /scoring-jobs/{id}/cancel  → batalkan job (antrian)
 
 **Hapus Semua** di mode middleware hanya membatalkan dokumen **aktif di antrian** — dokumen selesai/gagal di halaman Hasil **tidak dihapus**.
 
-Auth (`/auth/*`), admin (`/admin/*`), dan engine status (`/engine/status`) **belum tersedia** di middleware — masih memakai mock.
+Auth (`/auth/*`) dan admin (`/admin/*`) **belum tersedia** di middleware — masih memakai mock. Engine dashboard mengagregasi data dari `GET /scoring-jobs`.
 
 Kontrak lengkap & panduan penulisan kode API: [API_CONTRACT.md](./API_CONTRACT.md)
 
@@ -162,8 +161,8 @@ Arsitektur modular berbasis `features/`:
 ```
 src/
 ├── app/           App.js, lazyPages.js
-├── features/      auth, upload, documents, results, engine, admin
-└── shared/        api, layout, ui, store, utils
+├── features/      auth, upload, preview, documents, engine, admin
+└── shared/        api, constants, layout, ui, store, utils
 ```
 
 Setiap fitur punya `api/`, `components/`, `pages/`, `store/`, dan barrel `index.js`. Kode lintas fitur ada di `shared/`.
@@ -174,6 +173,7 @@ Setiap fitur punya `api/`, `components/`, `pages/`, `store/`, dan barrel `index.
 |---------|------|
 | Mapping API ↔ kode UI | `shared/api/middlewareContract.js` |
 | Label dokumen (ID) | `shared/utils/documentStatusLabels.js` |
+| Badge status dokumen | `shared/ui/DocumentStatusBadge.js` |
 | Label engine/worker (ID) | `shared/utils/engineStatusLabels.js` |
 
 Detail folder & konvensi import: [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md)
@@ -196,6 +196,7 @@ Alias `@/` → `src/` dikonfigurasi di `vite.config.js`.
 | `npm run dev` | Development server (hot reload) |
 | `npm run build` | Build production ke `dist/` |
 | `npm run preview` | Preview build production |
+| `npm test` | Unit test (mapper & utils) |
 | `.\scripts\test-middleware.ps1` | Uji koneksi ke middleware (PowerShell, butuh LAN/VPN) |
 
 ---

@@ -1,5 +1,0 @@
-export { ResultsTable } from './components/ResultsTable'
-export { ScoreSummary } from './components/ScoreSummary'
-export { ExtractedIndicatorsPanel } from './components/ExtractedIndicatorsPanel'
-export { TidakDapatDihitungPanel } from './components/NonProcessAble'
-export { StatusBadge } from './components/StatusBadge'

@@ -50,3 +50,26 @@ export function getFileTypeLabel(file) {
   if (isDocxFile(file)) return 'DOCX'
   return 'Dokumen'
 }
+
+export function toPreviewFile(blob, fileName, mimeType) {
+  if (blob instanceof File) return blob
+
+  const type =
+    mimeType || blob.type || guessMimeTypeFromFileName(fileName)
+
+  return new File([blob], fileName, { type })
+}
+
+export function downloadBlobAsFile(blob, fileName) {
+  if (!blob || !fileName) {
+    throw new Error('Data file tidak lengkap untuk diunduh.')
+  }
+
+  const url = URL.createObjectURL(blob)
+  const link = globalThis.document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.rel = 'noopener'
+  link.click()
+  URL.revokeObjectURL(url)
+}

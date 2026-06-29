@@ -49,6 +49,7 @@ Axios  →  Middleware API  →  Engine (callback)
 | jspdf | 4.x | Generate laporan hasil PDF |
 | jspdf-autotable | 5.x | Tabel skor di laporan PDF |
 | @vitejs/plugin-react | 4.x | Dev Tool |
+| Vitest | 3.x | Unit test |
 
 ---
 
@@ -62,7 +63,7 @@ Komponen dirender dengan `React.createElement` (alias `h`), **bukan JSX**.
 | `QueuePage` | Antrian dokumen |
 | `ProcessedPage` | Daftar selesai |
 | `ProcessedDetailPage` | Detail hasil skor |
-| `FilePreviewPage` | Preview dokumen |
+| `FilePreviewPage` | Preview file lokal & ter-upload (`features/preview`) |
 | `LoginPage` | Autentikasi |
 | `EngineDashboardPage` | Dashboard engine (admin) |
 | `UserActivityPage` | Log aktivitas (admin) |
@@ -70,7 +71,7 @@ Komponen dirender dengan `React.createElement` (alias `h`), **bukan JSX**.
 | `DocumentDetailModal` | Detail metadata + preview file upload |
 | `DocumentWatcher` | Polling status background |
 | `DownloadResultPdfButton` | Pratinjau & unduh laporan PDF |
-| `ResultsTable` / `TidakDapatDihitungPanel` | Tampilan hasil skor |
+| `ResultsTable` / `TidakDapatDihitungPanel` | Tampilan hasil skor (`documents/components/results/`) |
 | `Toast` / `PageLoader` / `ConfirmDialog` | Notifikasi, loading, konfirmasi |
 
 Halaman utama di-load lazy via `lazyPages.js`.
@@ -83,7 +84,8 @@ Halaman utama di-load lazy via `lazyPages.js`.
 |------|-------------------|
 | `/login` | Login |
 | `/upload` | Unggah |
-| `/preview/:previewId` | Preview file |
+| `/preview/:previewId` | Preview file lokal |
+| `/preview/document/:documentId` | Preview file ter-upload |
 | `/queue` | Antrian |
 | `/processed` | Selesai |
 | `/processed/:id` | Detail skor |
@@ -123,7 +125,7 @@ Actions utama dokumen: `uploadFiles()`, `fetchQueueDocuments()`, `fetchProcessed
 
 Layer: `scoringJobsApi.js` → `documentsApi.js` → `useDocumentStore`.
 
-Mock per domain dikontrol `config.js` (`VITE_USE_MOCK`, `VITE_USE_MOCK_AUTH`, dll.).
+Mock auth & admin dikontrol `config.js` (`VITE_USE_MOCK_AUTH`, `VITE_USE_MOCK_ADMIN`). Dokumen & engine selalu middleware nyata.
 
 Kontrak: [API_CONTRACT.md](./API_CONTRACT.md)
 
@@ -153,7 +155,8 @@ Layout sidebar + konten, tabel, toast, color grading (Hijau/Kuning/Merah). Tema 
 | Redux | Zustand cukup ringan |
 | UI library (MUI, dll.) | Tailwind + komponen custom |
 | Next.js | Pure client SPA |
-| React Query | Polling manual via DocumentWatcher |
+| React Query | Polling tunggal via `DocumentWatcher` (5 detik) |
+| Vitest | Unit test mapper & utils |
 | WebSocket | Polling HTTP cukup |
 
 ---
@@ -167,9 +170,9 @@ Layout sidebar + konten, tabel, toast, color grading (Hijau/Kuning/Merah). Tema 
 4. Toast: "Dokumen berhasil diupload"
 
 ### Antrian & notifikasi
-5. `QueuePage` → `GET /scoring-jobs` (filter antrian)
-6. `DocumentWatcher` polling 3 detik → toast selesai
-7. Auto-refresh antrian (5 detik) & list selesai
+5. `QueuePage` → `GET /scoring-jobs` (filter antrian) + tombol **Muat Ulang**
+6. `DocumentWatcher` polling 5 detik (tab aktif) → toast selesai + refresh store
+7. Store dokumen ikut refresh antrian bila masih ada job pending
 
 ### Hasil
 8. `ProcessedPage` → list selesai & gagal
@@ -179,7 +182,7 @@ Layout sidebar + konten, tabel, toast, color grading (Hijau/Kuning/Merah). Tema 
 12. **Pratinjau PDF** → modal iframe (`generateResultPdf.js`)
 13. **Unduh PDF** → `doc.save()` via jsPDF
 
-Label status UI (badge, engine) terpusat di `shared/utils/documentStatusLabels.js` dan `engineStatusLabels.js` — lihat [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md).
+Label status UI terpusat di `shared/utils/documentStatusLabels.js` dan `engineStatusLabels.js`. Badge dokumen: `shared/ui/DocumentStatusBadge.js`. Lihat [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md).
 
 ---
 

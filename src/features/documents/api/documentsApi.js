@@ -41,8 +41,8 @@ export async function cancelDocument(id) {
   return cancelScoringJob(id)
 }
 
-export async function fetchDocumentFile(id) {
-  return fetchScoringJobFile(id)
+export async function fetchDocumentFile(id, options) {
+  return fetchScoringJobFile(id, options)
 }
 
 export async function clearAllDocuments() {

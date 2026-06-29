@@ -1,7 +1,7 @@
 import { createElement as h } from 'react'
 import { Eye, FileText, X } from 'lucide-react'
-import { canPreviewFile } from '../utils/filePreview'
-import { openFilePreview } from '../utils/openFilePreview'
+import { openLocalFilePreview } from '@/features/preview'
+import { canPreviewFile } from '@/shared/utils/file'
 import { formatFileSize } from '@/shared/utils/format'
 import {
   isFileWithinUploadLimit,
@@ -96,7 +96,7 @@ export function SelectedFilesList({
                   type: 'button',
                   className: btnGhost,
                   title: 'Buka preview di tab baru',
-                  onClick: () => openFilePreview(file),
+                  onClick: () => openLocalFilePreview(file),
                 },
                 h(Eye, { className: 'h-4 w-4' }),
                 'Preview',

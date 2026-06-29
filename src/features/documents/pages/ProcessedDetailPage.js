@@ -8,7 +8,7 @@ import {
   ResultsTable,
   ScoreSummary,
   TidakDapatDihitungPanel,
-} from '@/features/results'
+} from '../components/results'
 
 export function ProcessedDetailPage() {
   const { id } = useParams()
@@ -120,7 +120,10 @@ export function ProcessedDetailPage() {
           ),
           h(DownloadResultPdfButton, { documentResult }),
         ),
-        h(ScoreSummary, { results: documentResult.results }),
+        h(ScoreSummary, {
+          results: documentResult.results,
+          extractedIndicators: documentResult.results.extractedIndicators,
+        }),
         h(ResultsTable, { detail: documentResult.results.detail }),
         hasSidePanel &&
           h(TidakDapatDihitungPanel, {

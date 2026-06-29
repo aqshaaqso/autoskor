@@ -31,6 +31,14 @@ export default function App() {
       element: suspensePage(LoginPage),
     }),
     h(Route, {
+      path: '/preview/document/:documentId',
+      element: h(
+        ProtectedRoute,
+        null,
+        suspensePage(FilePreviewPage),
+      ),
+    }),
+    h(Route, {
       path: '/preview/:previewId',
       element: h(
         ProtectedRoute,

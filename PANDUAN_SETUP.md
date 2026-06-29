@@ -53,7 +53,7 @@ cp .env.example .env
 
 **Tanpa file `.env`, app bisa error atau tidak jalan normal.**
 
-Default `.env.example` sudah diset **mode middleware nyata**. Kalau laptop belum bisa akses server, ubah ke **mode mock** (lihat [Dua Mode Konfigurasi](#dua-mode-konfigurasi)).
+Default `.env.example` mengarah ke `http://localhost:8000/api`. Sesuaikan `VITE_API_BASE_URL` dengan server middleware yang dapat diakses (lihat [Dua Mode Konfigurasi](#dua-mode-konfigurasi)).
 
 ### 4. Jalankan dev server
 
@@ -86,30 +86,28 @@ Script ini otomatis: cek Node.js → `npm install` → salin `.env` jika belum a
 
 ## Dua Mode Konfigurasi
 
+> **Catatan:** Upload, antrian, dan hasil **selalu** membutuhkan middleware nyata. Yang bisa dimock hanya auth (`VITE_USE_MOCK_AUTH`) dan admin (`VITE_USE_MOCK_ADMIN`).
+
 ### Mode A — Middleware nyata (default tim)
 
 Dipakai jika laptop bisa akses server middleware (VPN / LAN kantor). Ini konfigurasi aktif di `.env.example`.
 
 ```env
 VITE_API_BASE_URL=http://172.16.210.244:8000/api
-VITE_USE_MOCK=false
 VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
-VITE_USE_MOCK_ENGINE=false
 ```
 
-> Kalau `VITE_USE_MOCK=false` tapi laptop **tidak bisa ping** ke `172.16.210.244` → upload & antrian akan gagal / loading terus. Ubah ke Mode B.
+> Upload & antrian **selalu** membutuhkan akses ke middleware di `VITE_API_BASE_URL`. Kalau laptop tidak bisa ping ke server → upload & antrian akan gagal / loading terus.
 
-### Mode B — Lokal / mock (laptop baru tanpa middleware)
+### Mode B — Auth/admin mock, middleware lokal
 
-Tidak butuh koneksi ke server. Semua data simulasi (termasuk 3 dokumen dummy di halaman Hasil).
+Hanya auth & admin yang dimock. Dokumen tetap membutuhkan middleware di URL yang dikonfigurasi.
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
-VITE_USE_MOCK=true
 VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
-VITE_USE_MOCK_ENGINE=true
 ```
 
 Setelah ubah `.env`, **wajib restart** dev server (`Ctrl+C` lalu `npm run dev` lagi).
@@ -143,15 +141,15 @@ Atau matikan proses yang pakai port 5173.
 ### Halaman putih / error di browser
 
 1. Pastikan file `.env` sudah ada
-2. Pastikan `VITE_USE_MOCK=true` kalau tidak connect ke middleware
+2. Pastikan `VITE_API_BASE_URL` mengarah ke middleware yang dapat diakses
 3. Buka DevTools (F12) → tab **Console** & **Network** untuk lihat error
 4. Restart: `Ctrl+C` → `npm run dev`
 
 ### Upload / antrian error "Network Error"
 
-Penyebab umum: `.env` pakai `VITE_USE_MOCK=false` tapi server `172.16.210.244` tidak bisa diakses dari laptop.
+Penyebab umum: server di `VITE_API_BASE_URL` tidak bisa diakses dari laptop.
 
-**Solusi:** ubah ke mode mock (lihat Mode B di atas).
+**Solusi:** pastikan VPN/LAN aktif atau ubah `VITE_API_BASE_URL` ke server yang reachable.
 
 ### Login gagal
 
@@ -187,6 +185,7 @@ Semua paket terdaftar di `package.json`. Versi terkunci di `package-lock.json`.
 | docx-preview | Preview dokumen Word |
 | jspdf | Generate laporan hasil PDF |
 | jspdf-autotable | Tabel skor di laporan PDF |
+| vitest | Unit test (dev) |
 
 Tidak perlu install manual satu per satu — cukup `npm install`.
 
@@ -199,6 +198,7 @@ Tidak perlu install manual satu per satu — cukup `npm install`.
 | `npm run dev` | Jalankan development server |
 | `npm run build` | Build production → folder `dist/` (wajib lulus sebelum deploy) |
 | `npm run preview` | Preview hasil build |
+| `npm test` | Unit test mapper & utils |
 | `.\scripts\test-middleware.ps1` | Uji koneksi middleware (health, list jobs, download file) |
 
 ### Uji middleware (opsional)
@@ -229,7 +229,9 @@ Jika sukses, folder `dist/` siap di-hosting statis.
 
 - Navigasi sidebar: **Unggah**, Antrian, Selesai, Engine, Aktivitas Pengguna
 - Tombol refresh: **Muat Ulang** (Antrian, Selesai, Engine, Aktivitas)
-- Label status dokumen/engine terpusat di `src/shared/utils/*StatusLabels.js` — lihat [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md#label-status-terpusat-tetap-modular)
+- Label status dokumen/engine terpusat di `src/shared/utils/*StatusLabels.js`
+- Badge status dokumen: `src/shared/ui/DocumentStatusBadge.js`
+- Struktur modular: [STRUKTUR_PROYEK.md](./STRUKTUR_PROYEK.md)
 
 ---
 

@@ -17,7 +17,7 @@ export const UploadPage = lazyNamed(
 )
 
 export const FilePreviewPage = lazyNamed(
-  () => import('@/features/upload/pages/FilePreviewPage'),
+  () => import('@/features/preview/pages/FilePreviewPage'),
   'FilePreviewPage',
 )
 

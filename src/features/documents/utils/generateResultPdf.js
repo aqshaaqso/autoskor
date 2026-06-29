@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import { autoTable } from 'jspdf-autotable'
 import { getConsecutiveAspekMeta } from '@/shared/constants/aspek'
+import { getCooperativeGeneralInfo } from '@/shared/utils/extractedIndicators'
 import {
   formatDateTime,
   formatDateTimeFull,
@@ -28,7 +29,6 @@ function toNumber(value, fallback = 0) {
 function normalizeResults(results) {
   return {
     totalSkorParsial: toNumber(results?.totalSkorParsial),
-    persentaseParsial: toNumber(results?.persentaseParsial),
     bobotDapatDihitung: toNumber(results?.bobotDapatDihitung, 85),
     predikat: results?.predikat ?? '-',
     tidakDapatDihitung: results?.tidakDapatDihitung ?? null,
@@ -209,6 +209,25 @@ function buildResultPdfDoc({ document, results }) {
   y += 2
 
   const bobotParsial = normalizedResults.bobotDapatDihitung
+  const cooperativeInfo = getCooperativeGeneralInfo(results?.extractedIndicators)
+  const cooperativeInfoContent =
+    cooperativeInfo.length > 0
+      ? cooperativeInfo
+          .map((item) => `${item.label}: ${item.displayValue}`)
+          .join('\n')
+      : 'Data informasi umum belum tersedia.'
+
+  const detail = normalizedResults.detail
+  const scoredIndicatorCount = detail.filter((row) => toNumber(row.skor) > 0).length
+  const partialScoreContent = [
+    `Skor Diperoleh: ${formatSkor(normalizedResults.totalSkorParsial)}`,
+    `Bobot Maksimal: ${bobotParsial}`,
+    detail.length > 0
+      ? `Indikator Terhitung: ${scoredIndicatorCount} dari ${detail.length} indikator`
+      : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
 
   autoTable(doc, {
     startY: y,
@@ -218,11 +237,11 @@ function buildResultPdfDoc({ document, results }) {
     body: [
       [
         {
-          content: 'Skor Parsial (Dapat Dihitung)',
+          content: 'Informasi Umum Koperasi',
           styles: { halign: 'center', fillColor: [248, 250, 252], fontStyle: 'bold' },
         },
         {
-          content: 'Persentase Parsial',
+          content: 'Skor Parsial (Dapat Dihitung)',
           styles: { halign: 'center', fillColor: [248, 250, 252], fontStyle: 'bold' },
         },
         {
@@ -232,17 +251,12 @@ function buildResultPdfDoc({ document, results }) {
       ],
       [
         {
-          content: `${formatSkor(normalizedResults.totalSkorParsial)} / ${bobotParsial}`,
-          styles: { halign: 'center', fontSize: 14, fontStyle: 'bold' },
+          content: cooperativeInfoContent,
+          styles: { halign: 'left', fontSize: 9, valign: 'middle' },
         },
         {
-          content: `${normalizedResults.persentaseParsial.toFixed(1)}%`,
-          styles: {
-            halign: 'center',
-            fontSize: 14,
-            fontStyle: 'bold',
-            textColor: [29, 78, 216],
-          },
+          content: partialScoreContent,
+          styles: { halign: 'left', fontSize: 9, valign: 'middle' },
         },
         {
           content: normalizedResults.predikat,
@@ -250,6 +264,7 @@ function buildResultPdfDoc({ document, results }) {
             halign: 'center',
             fontSize: 11,
             fontStyle: 'bold',
+            valign: 'middle',
             fillColor: getPredikatFill(normalizedResults.predikat),
             textColor: getPredikatTextColor(normalizedResults.predikat),
           },

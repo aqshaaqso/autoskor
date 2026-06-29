@@ -166,9 +166,10 @@ export async function clearAllScoringJobs() {
   return { cleared, total: cancellable.length, failed }
 }
 
-export async function fetchScoringJobFile(id) {
+export async function fetchScoringJobFile(id, options = {}) {
+  const { disposition = 'inline' } = options
   const { data } = await api.get(`/scoring-jobs/${id}/file`, {
-    params: { disposition: 'inline' },
+    params: { disposition },
     responseType: 'blob',
   })
   return data

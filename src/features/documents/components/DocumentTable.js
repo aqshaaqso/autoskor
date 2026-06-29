@@ -1,7 +1,7 @@
 import { createElement as h, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, ChevronRight, Loader2, Trash2 } from 'lucide-react'
-import { DocumentStatusBadge } from './DocumentStatusBadge'
+import { DocumentStatusBadge } from '@/shared/ui'
 import { DocumentDetailModal } from './DocumentDetailModal'
 import { ConfirmDialog, TablePagination } from '@/shared/ui'
 import { formatFileSize, formatDateTime } from '@/shared/utils/format'

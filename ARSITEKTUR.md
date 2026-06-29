@@ -73,6 +73,7 @@ Frontend **tidak** menghitung skor — hanya mengirim file dan membaca status/ha
 │  Selesai   │   /processed                                        │
 │  Engine*   │   /processed/:id  (detail skor)                     │
 │  Aktivitas*│   /preview/:previewId                               │
+│            │   /preview/document/:documentId                     │
 │            │   /engine                                           │
 │            │   /admin/activity                                   │
 └────────────┴─────────────────────────────────────────────────────┘
@@ -83,7 +84,8 @@ Frontend **tidak** menghitung skor — hanya mengirim file dan membaca status/ha
 | `/login` | LoginPage | Publik |
 | `/` | Redirect → `/upload` | ProtectedRoute |
 | `/upload` | UploadPage | ProtectedRoute |
-| `/preview/:previewId` | FilePreviewPage | ProtectedRoute |
+| `/preview/:previewId` | FilePreviewPage (file lokal) | ProtectedRoute |
+| `/preview/document/:documentId` | FilePreviewPage (file server) | ProtectedRoute |
 | `/queue` | QueuePage | ProtectedRoute |
 | `/processed` | ProcessedPage | ProtectedRoute |
 | `/processed/:id` | ProcessedDetailPage | ProtectedRoute |
@@ -99,6 +101,7 @@ main.js
   └── BrowserRouter
         └── App (Routes)
               ├── /login → LoginPage
+              ├── /preview/document/:documentId → ProtectedRoute → FilePreviewPage
               ├── /preview/:previewId → ProtectedRoute → FilePreviewPage
               └── / → ProtectedRoute → MainLayout
                     ├── Sidebar + DocumentWatcher
@@ -159,7 +162,8 @@ Mapping di `src/shared/api/middlewareContract.js`, diterapkan di `scoringJobsMap
 
 Label tampilan Bahasa Indonesia (badge, modal, engine) terpusat di:
 
-- `src/shared/utils/documentStatusLabels.js` — status dokumen
+- `src/shared/utils/documentStatusLabels.js` — label status dokumen
+- `src/shared/ui/DocumentStatusBadge.js` — komponen badge (dipakai lintas fitur)
 - `src/shared/utils/engineStatusLabels.js` — status cluster/worker
 - `src/features/engine/utils/clusterStatus.js` & `workerStatus.js` — facade agar komponen engine tidak import langsung ke shared
 
@@ -179,7 +183,7 @@ Label tampilan Bahasa Indonesia (badge, modal, engine) terpusat di:
 1. `GET /scoring-jobs?status=uploading,uploaded,waiting,running`
 2. Tabel: nama file (klik → modal detail), kolom **Diunggah**, status
 3. Tombol **Hapus** per baris → `POST /scoring-jobs/{id}/cancel`
-4. Auto-refresh 5 detik + tombol **Muat Ulang**
+4. Refresh otomatis via `DocumentWatcher` (5 detik, saat tab aktif) + tombol **Muat Ulang** manual
 
 ### Selesai (`/processed`)
 
@@ -187,13 +191,22 @@ Label tampilan Bahasa Indonesia (badge, modal, engine) terpusat di:
 2. Dokumen **sukses** → tombol **Lihat Hasil** → `/processed/:id`
 3. Dokumen **gagal** → tombol **Lihat Detail** → modal metadata + `failureReason`
 4. Klik nama file / kolom Diunggah juga membuka modal detail (sama seperti antrian)
-5. Halaman detail sukses: `GET /scoring-jobs/{id}` → `ScoreSummary`, `ResultsTable`, `TidakDapatDihitungPanel`
+5. Halaman detail sukses: `GET /scoring-jobs/{id}` → komponen di `documents/components/results/` (`ScoreSummary`, `ResultsTable`, `TidakDapatDihitungPanel`)
 6. Tombol **Pratinjau PDF** / **Unduh PDF** → laporan hasil (jsPDF, client-side) — hanya untuk status selesai
 7. **Hapus Semua** hanya membatalkan antrian aktif — dokumen selesai/gagal tetap tampil
 
 ### Engine (`/engine`, admin)
 
 Dashboard mengagregasi data dari `GET /scoring-jobs` (middleware tidak punya `/engine/status`). Komponen: `ClusterStatusPanel`, `EngineStatsGrid`, `RecentActivityList`, `WorkerSection`.
+
+### Preview file
+
+| Alur | Route | Modul |
+|------|-------|-------|
+| File lokal (belum/sedang diunggah) | `/preview/:previewId` | `features/preview` — session in-memory |
+| File ter-upload di server | `/preview/document/:documentId` | `features/preview` fetch via `documentsApi` |
+
+Trigger: tombol **Preview** di `SelectedFilesList` (lokal) atau `DocumentDetailModal` (server). Unduh file asli: `GET /scoring-jobs/{id}/file`.
 
 ### Login (`/login`)
 
@@ -209,8 +222,8 @@ Halaman React
 Zustand Store (useDocumentStore, useUploadStore, useAuthStore, ...)
     ↓
 Feature API (documentsApi, authApi, engineApi, adminApi)
-    ↓ switch mock/real (config.js)
-scoringJobsApi / mock/*
+    ↓ mock hanya auth/admin (config.js)
+scoringJobsApi / authMock / adminMock
     ↓
 scoringJobsMapper (middleware → format UI)
     ↓
@@ -227,8 +240,9 @@ Jangan panggil Axios langsung dari komponen — selalu lewat store → feature A
 
 | Komponen | Interval | Tujuan |
 |----------|----------|--------|
-| `DocumentWatcher` | 3 detik | Deteksi job selesai → toast + refresh list |
-| `QueuePage` | 5 detik | Refresh tabel antrian |
+| `DocumentWatcher` | 5 detik | Polling tunggal — deteksi job selesai → toast + refresh store |
+
+`DocumentWatcher` berjalan di `MainLayout` dan hanya polling saat tab aktif (`document.visibilityState`). Store dokumen ikut refresh antrian bila masih ada job pending.
 
 Toast muncul saat status berubah ke `done`. Tidak perlu WebSocket.
 

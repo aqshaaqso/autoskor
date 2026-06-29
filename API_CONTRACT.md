@@ -29,7 +29,9 @@ Frontend (React SPA)
     │
     ├── POST /scoring-jobs/upload        → kirim file RAT
     ├── GET  /scoring-jobs               → list antrian & selesai
-    └── GET  /scoring-jobs/{id}          → detail job + hasil skor
+    ├── GET  /scoring-jobs/{id}          → detail job + hasil skor
+    ├── GET  /scoring-jobs/{id}/file     → unduh / preview file asli
+    └── POST /scoring-jobs/{id}/cancel   → batalkan job antrian
     │
     ▼
 Middleware API
@@ -48,21 +50,19 @@ Endpoint `engine-callback/*` dipanggil oleh **engine**, bukan browser.
 
 ```env
 VITE_API_BASE_URL=http://172.16.210.244:8000/api
-VITE_USE_MOCK=false
 VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
-VITE_USE_MOCK_ENGINE=false
 VITE_SCORING_JOBS_LIST_LIMIT=100
 ```
 
 | Variable | Default | Deskripsi |
 |----------|---------|-----------|
 | `VITE_API_BASE_URL` | `http://localhost:8000/api` | Base URL sampai `/api` |
-| `VITE_USE_MOCK` | `true` | `false` = dokumen pakai middleware |
-| `VITE_USE_MOCK_AUTH` | `true` | Auth masih mock sampai `/auth/*` tersedia |
-| `VITE_USE_MOCK_ADMIN` | `true` | Admin masih mock sampai `/admin/*` tersedia |
-| `VITE_USE_MOCK_ENGINE` | `false` | `true` = engine dashboard pakai mock lokal |
+| `VITE_USE_MOCK_AUTH` | `true` (dev) | Auth mock sampai `/auth/*` tersedia |
+| `VITE_USE_MOCK_ADMIN` | `true` (dev) | Admin mock sampai `/admin/*` tersedia |
 | `VITE_SCORING_JOBS_LIST_LIMIT` | `100` | Limit list scoring jobs |
+
+Scoring jobs & engine dashboard **selalu** memakai middleware nyata — tidak ada `VITE_USE_MOCK` global.
 
 Restart dev server setelah mengubah `.env`.
 
@@ -169,7 +169,10 @@ Di mode middleware nyata, **Hapus Semua tidak menghapus** dokumen selesai/gagal 
 GET /scoring-jobs/{id}/file?disposition=inline
 ```
 
-Response: binary file (PDF/DOCX). Dipakai untuk preview dokumen yang sudah di-upload lewat `DocumentDetailModal`.
+Response: binary file (PDF/DOCX). Dipakai untuk:
+- Preview di tab baru: `/preview/document/:documentId` (`FilePreviewPage`)
+- Unduh dari `DocumentDetailModal` atau halaman preview
+- Query `disposition=attachment` untuk unduh paksa
 
 ---
 
@@ -203,7 +206,7 @@ Response: binary file (PDF/DOCX). Dipakai untuk preview dokumen yang sudah di-up
 | `failed` | `failed` |
 | `canceled` | `canceled` (disembunyikan dari list) |
 
-**Label tampilan** (Bahasa Indonesia) di `src/shared/utils/documentStatusLabels.js` — komponen seperti `DocumentStatusBadge` mengimpor dari sini, bukan hardcode string.
+**Label tampilan** (Bahasa Indonesia) di `src/shared/utils/documentStatusLabels.js`. Komponen `DocumentStatusBadge` (`src/shared/ui/`) mengimpor label & kelas dari file tersebut — jangan hardcode string di komponen.
 
 ### Siklus status
 
@@ -272,8 +275,9 @@ Validasi ada di frontend; backend disarankan validasi ulang.
 
 | Polling | Interval | Endpoint | Tujuan |
 |---------|----------|----------|--------|
-| `DocumentWatcher` | 3 detik | `GET /scoring-jobs` | Deteksi selesai → toast |
-| Halaman antrian | 5 detik | `GET /scoring-jobs` (filter antrian) | Refresh tabel |
+| `DocumentWatcher` | 5 detik | `GET /scoring-jobs` (semua job) | Deteksi selesai → toast + refresh store |
+
+Polling hanya berjalan saat tab browser aktif (`document.visibilityState`). Halaman antrian/selesai tidak punya interval sendiri — refresh lewat `DocumentWatcher` atau tombol **Muat Ulang**.
 
 Toast "selesai diproses" muncul saat status berubah ke `done` (`completed_success` di middleware).
 
@@ -310,10 +314,9 @@ Fitur berikut masih memakai **mock lokal**:
 | POST | `/auth/login` | `VITE_USE_MOCK_AUTH` |
 | GET | `/auth/me` | `VITE_USE_MOCK_AUTH` |
 | POST | `/auth/logout` | `VITE_USE_MOCK_AUTH` |
-| GET | `/engine/status` | `VITE_USE_MOCK_ENGINE` |
 | GET | `/admin/overview` | `VITE_USE_MOCK_ADMIN` |
 
-Engine dashboard saat ini mengagregasi data dari `GET /scoring-jobs` karena `/engine/status` belum ada di middleware.
+Engine dashboard mengagregasi data dari `GET /scoring-jobs` — endpoint `/engine/status` belum ada di middleware.
 
 ---
 
@@ -323,14 +326,14 @@ Engine dashboard saat ini mengagregasi data dari `GET /scoring-jobs` karena `/en
 
 ```
 shared/api/client.js              → Axios instance
-shared/api/config.js              → Flag mock dari .env
+shared/api/config.js              → Flag mock auth/admin dari .env
 shared/api/middlewareContract.js  → Mapping status API ↔ kode UI
 shared/api/scoringJobs/
   scoringJobsApi.js               → HTTP call middleware
   scoringJobsMapper.js            → Response → format UI (+ uploadedBy)
 shared/utils/documentStatusLabels.js → Label Indonesia dokumen
 shared/utils/engineStatusLabels.js   → Label Indonesia engine
-features/documents/api/documentsApi.js  → Switch mock/real
+features/documents/api/documentsApi.js  → Wrapper scoring jobs
 features/documents/store/useDocumentStore.js → State Zustand
 Halaman React                     → Panggil store, BUKAN Axios langsung
 ```
@@ -342,7 +345,7 @@ Ubah teks status di UI → edit `*StatusLabels.js`. Ubah logika filter/status �
 1. Tulis fungsi HTTP di layer yang tepat (`scoringJobsApi.js`, `authApi.js`, dll.)
 2. Path di kode = path Swagger **minus** `/api`
 3. Tambah mapper jika format response berbeda dari UI
-4. Bungkus di feature API + switch mock
+4. Bungkus di feature API (+ mock di `authApi`/`adminApi` bila endpoint belum ada)
 5. Panggil dari store Zustand
 6. Hubungkan ke komponen/halaman
 7. Update dokumen ini jika kontrak berubah
@@ -411,17 +414,18 @@ Backend wajib mengizinkan origin frontend (development: `http://localhost:5173`)
 - [x] UI upload, antrian, selesai, detail hasil
 - [x] Layer API + mapper middleware
 - [x] Polling status + toast notifikasi
-- [x] Mock per domain (auth, admin, engine, dokumen)
-- [x] Switch ke middleware via `VITE_USE_MOCK=false`
+- [x] Mock auth & admin (`VITE_USE_MOCK_AUTH`, `VITE_USE_MOCK_ADMIN`)
+- [x] Dokumen & engine memakai middleware nyata
 - [x] Hapus dari antrian (`POST /scoring-jobs/{id}/cancel`)
 - [x] Preview file upload (`GET /scoring-jobs/{id}/file`)
 - [x] Unduh & pratinjau laporan hasil PDF (client-side)
 - [x] Label status terpusat (modular per domain)
 - [x] Detail dokumen gagal via modal di halaman Selesai
+- [x] Unit test mapper & utils (`npm test`)
 
 ### Uji integrasi
 
-1. Set `VITE_USE_MOCK=false` dan `VITE_API_BASE_URL` ke middleware
+1. Set `VITE_API_BASE_URL` ke middleware yang dapat diakses
 2. Upload 1 file PDF → cek toast sukses + muncul di antrian
 3. Tunggu engine selesai → cek toast "selesai diproses"
 4. Buka halaman Selesai → klik **Lihat Hasil** → cek tabel skor

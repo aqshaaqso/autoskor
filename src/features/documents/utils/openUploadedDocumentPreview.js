@@ -1,25 +1,15 @@
 import { fetchDocumentFile } from '../api/documentsApi'
-import { openFilePreview } from '@/features/upload/utils/openFilePreview'
 import {
-  canPreviewFile,
   canPreviewFileName,
-  guessMimeTypeFromFileName,
-} from '@/features/upload/utils/filePreview'
-
-function toPreviewFile(blob, fileName, mimeType) {
-  if (blob instanceof File) return blob
-
-  const type =
-    mimeType || blob.type || guessMimeTypeFromFileName(fileName)
-
-  return new File([blob], fileName, { type })
-}
+  downloadBlobAsFile,
+  toPreviewFile,
+} from '@/shared/utils/file'
 
 export function canPreviewUploadedDocument(document) {
   return canPreviewFileName(document?.fileName)
 }
 
-export async function openUploadedDocumentPreview(document) {
+export function openUploadedDocumentPreview(document) {
   if (!document?.id || !document?.fileName) {
     throw new Error('Data dokumen tidak lengkap untuk preview.')
   }
@@ -28,12 +18,20 @@ export async function openUploadedDocumentPreview(document) {
     throw new Error('Format file tidak mendukung preview. Gunakan PDF atau DOCX.')
   }
 
-  const blob = await fetchDocumentFile(document.id)
-  const file = toPreviewFile(blob, document.fileName, document.mimeType)
+  const previewUrl = `${window.location.origin}/preview/document/${document.id}`
+  const openedWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer')
 
-  if (!canPreviewFile(file)) {
-    throw new Error('Format file tidak mendukung preview. Gunakan PDF atau DOCX.')
+  if (!openedWindow) {
+    throw new Error('Popup diblokir browser. Izinkan popup untuk membuka preview.')
+  }
+}
+
+export async function downloadUploadedDocument(document) {
+  if (!document?.id || !document?.fileName) {
+    throw new Error('Data dokumen tidak lengkap untuk diunduh.')
   }
 
-  openFilePreview(file)
+  const blob = await fetchDocumentFile(document.id, { disposition: 'attachment' })
+  const file = toPreviewFile(blob, document.fileName, document.mimeType)
+  downloadBlobAsFile(file, document.fileName)
 }

@@ -10,4 +10,5 @@ logs
 .DS_Store
 .txt
 test-output.pdf
+scripts/downloaded-*.pdf
 terminals/

@@ -1,5 +1,5 @@
 import { createElement as h } from 'react'
-import { DocumentStatusBadge } from '@/features/documents'
+import { DocumentStatusBadge } from '@/shared/ui'
 import { formatDateTime } from '@/shared/utils/format'
 
 export function RecentActivityList({ items }) {

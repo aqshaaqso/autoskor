@@ -2,7 +2,7 @@
 
 ```
 autoskor/
-├── public/
+├── public/                           # Asset statis (vite.svg)
 ├── scripts/
 │   └── test-middleware.ps1           # Uji endpoint middleware
 ├── src/
@@ -17,30 +17,32 @@ autoskor/
 │   │   │   ├── store/useAuthStore.js
 │   │   │   └── index.js
 │   │   ├── upload/
-│   │   │   ├── components/           # UploadArea, UploadDropzone, UploadQueueList, ...
-│   │   │   ├── pages/                # UploadPage, FilePreviewPage
+│   │   │   ├── components/           # UploadArea, UploadDropzone, SelectedFilesList, ...
+│   │   │   ├── pages/UploadPage.js
 │   │   │   ├── store/useUploadStore.js
-│   │   │   ├── utils/                # filePreview, previewSession, openFilePreview
+│   │   │   ├── constants.js
+│   │   │   └── index.js
+│   │   ├── preview/
+│   │   │   ├── pages/FilePreviewPage.js
+│   │   │   ├── utils/                # previewSession, openLocalFilePreview, downloadPreviewFile
 │   │   │   └── index.js
 │   │   ├── documents/
 │   │   │   ├── api/documentsApi.js
 │   │   │   ├── components/
 │   │   │   │   ├── DocumentTable.js
-│   │   │   │   ├── DocumentStatusBadge.js
 │   │   │   │   ├── DocumentDetailModal.js
 │   │   │   │   ├── DocumentWatcher.js
 │   │   │   │   ├── ClearAllDocumentsButton.js
 │   │   │   │   ├── DownloadResultPdfButton.js
-│   │   │   │   └── ResultPdfPreviewModal.js
+│   │   │   │   ├── ResultPdfPreviewModal.js
+│   │   │   │   └── results/          # ScoreSummary, ResultsTable, ...
 │   │   │   ├── pages/                # QueuePage, ProcessedPage, ProcessedDetailPage
 │   │   │   ├── store/useDocumentStore.js
 │   │   │   ├── utils/
 │   │   │   │   ├── generateResultPdf.js
 │   │   │   │   ├── documentDetailFields.js
 │   │   │   │   └── openUploadedDocumentPreview.js
-│   │   │   └── index.js
-│   │   ├── results/
-│   │   │   ├── components/           # ResultsTable, ScoreSummary, StatusBadge, NonProcessAble
+│   │   │   ├── constants.js
 │   │   │   └── index.js
 │   │   ├── engine/
 │   │   │   ├── api/                  # engineApi.js, engineStatusMapper.js
@@ -58,23 +60,18 @@ autoskor/
 │   ├── shared/
 │   │   ├── api/
 │   │   │   ├── client.js             # Axios instance + token
-│   │   │   ├── config.js             # Feature flags mock/real API
+│   │   │   ├── config.js             # Flag mock auth/admin dari .env
 │   │   │   ├── middlewareContract.js # Mapping status middleware ↔ UI
 │   │   │   ├── scoringJobs/          # scoringJobsApi, scoringJobsMapper, constants
-│   │   │   └── mock/                 # Mock per domain (auth, documents, admin, engine)
+│   │   │   └── mock/                 # authMock, adminMock, activityMock
+│   │   ├── constants/                # aspek, indikator, fileTypes, upload, pagination
 │   │   ├── layout/                   # MainLayout, Sidebar, UserMenu
-│   │   ├── ui/                       # Toast, PageLoader, StatCard, ConfirmDialog
+│   │   ├── ui/                       # Toast, PageLoader, DocumentStatusBadge, ...
 │   │   ├── store/                    # useUiStore
-│   │   ├── utils/
-│   │   │   ├── index.js              # Barrel: format, colorGrading, *StatusLabels
-│   │   │   ├── documentStatusLabels.js
-│   │   │   ├── engineStatusLabels.js
-│   │   │   ├── colorGrading.js
-│   │   │   └── format.js
-│   │   └── constants/upload.js       # Batas ukuran file
+│   │   └── utils/                    # format, file, resultDetail, extractedIndicators, ...
 │   ├── main.js
 │   └── index.css
-├── dist/                             # Build production
+├── dist/                             # Build production (gitignored)
 ├── API_CONTRACT.md
 ├── ARSITEKTUR.md
 ├── TECH_STACK.md
@@ -97,6 +94,7 @@ Setiap fitur punya **public API** lewat `index.js`. File di luar fitur mengimpor
 
 ```js
 import { QueuePage, useDocumentStore } from '@/features/documents'
+import { openLocalFilePreview } from '@/features/preview'
 import { useAuthStore } from '@/features/auth'
 ```
 
@@ -104,6 +102,7 @@ File **di dalam** fitur yang sama memakai path relatif:
 
 ```js
 import { useDocumentStore } from '../store/useDocumentStore'
+import { ScoreSummary } from '../components/results'
 ```
 
 ### Lapisan `shared/`
@@ -112,8 +111,11 @@ Kode lintas fitur: layout, HTTP client, mock, utilitas, UI atomik.
 
 ```js
 import { MainLayout } from '@/shared/layout'
+import { DocumentStatusBadge } from '@/shared/ui'
 import { useUiStore } from '@/shared/store'
 import { api } from '@/shared/api/client'
+import { normalizeBobot } from '@/shared/utils'
+import { ASPEK } from '@/shared/constants'
 ```
 
 ### Ketergantungan antar fitur
@@ -121,27 +123,51 @@ import { api } from '@/shared/api/client'
 | Dari | Ke | Alasan |
 |------|-----|--------|
 | `upload` | `documents` | Upload memanggil API & store dokumen |
-| `documents` | `results` | Halaman detail menampilkan komponen skor |
-| `engine` | `documents` | Agregasi status dari scoring jobs |
-| `shared/layout` | `auth`, `documents` | Sidebar auth + DocumentWatcher |
+| `upload` | `preview` | Preview file lokal sebelum upload |
+| `documents` | `preview` | Halaman render file (`FilePreviewPage`) |
+| `preview` | `documents` | Fetch file server di tab preview |
+| `engine` | `shared` | `DocumentStatusBadge` di `shared/ui` |
+| `shared/layout` | `auth`, `documents` | Sidebar auth + `DocumentWatcher` |
+
+Komponen hasil skor (`ScoreSummary`, `ResultsTable`, dll.) ada di `documents/components/results/` — bukan feature terpisah.
+
+### Preview & unduh file
+
+| Alur | Modul | Route / trigger |
+|------|-------|-----------------|
+| File lokal (pre-upload) | `preview` | `/preview/:previewId` |
+| File server (sudah diunggah) | `documents` + `preview` | `/preview/document/:documentId` |
+| PDF hasil skor (jsPDF) | `documents` | Modal/tombol di `/processed/:id` |
 
 ### Aturan API
 
-Halaman React → Store Zustand → Feature API → `scoringJobsApi` / mock → Axios.
+Halaman React → Store Zustand → Feature API → `scoringJobsApi` → Axios.
 
-Jangan panggil Axios langsung dari komponen. Detail: [API_CONTRACT.md](./API_CONTRACT.md#panduan-developer-frontend).
+Dokumen & engine **selalu** memakai middleware nyata. Mock hanya untuk `auth` dan `admin`.
 
-### Label status (terpusat, tetap modular)
+Detail: [API_CONTRACT.md](./API_CONTRACT.md#panduan-developer-frontend).
+
+### Label status (terpusat)
 
 | Lapisan | File | Isi |
 |---------|------|-----|
-| API ↔ kode | `shared/api/middlewareContract.js` | Mapping status & filter (`queue` → `waiting,running,…`) |
-| Label dokumen | `shared/utils/documentStatusLabels.js` | Label Indonesia untuk badge & modal detail |
+| API ↔ kode | `shared/api/middlewareContract.js` | Mapping status & filter |
+| Label dokumen | `shared/utils/documentStatusLabels.js` | Label Indonesia badge & modal |
 | Label engine | `shared/utils/engineStatusLabels.js` | Label Indonesia cluster/worker |
-| Facade engine | `features/engine/utils/*.js` | Komponen engine import relatif ke facade fitur |
-| Komponen dokumen | `features/documents/components/` | Import dari `@/shared/utils/documentStatusLabels` |
+| Badge dokumen | `shared/ui/DocumentStatusBadge.js` | Komponen badge reusable |
+| Facade engine | `features/engine/utils/*.js` | Komponen engine import facade fitur |
 
-Ubah teks tampilan → edit file `*StatusLabels.js` di `shared/utils`. Jangan duplikat label di komponen.
+### Unit test
+
+File test berdampingan dengan modul yang diuji:
+
+```
+src/shared/utils/resultDetail.test.js
+src/shared/utils/extractedIndicators.test.js
+src/shared/api/scoringJobs/scoringJobsMapper.test.js
+```
+
+Jalankan: `npm test`
 
 ---
 

@@ -1,10 +1,11 @@
 import { createElement as h, useEffect, useState } from 'react'
-import { AlertCircle, Eye, FileText, Loader2, X } from 'lucide-react'
+import { AlertCircle, Download, Eye, FileText, Loader2, X } from 'lucide-react'
 import { getDocumentById } from '../api/documentsApi'
-import { DocumentStatusBadge } from './DocumentStatusBadge'
+import { DocumentStatusBadge } from '@/shared/ui'
 import { buildDocumentDetailSections } from '../utils/documentDetailFields'
 import {
   canPreviewUploadedDocument,
+  downloadUploadedDocument,
   openUploadedDocumentPreview,
 } from '../utils/openUploadedDocumentPreview'
 import { useUiStore } from '@/shared/store'
@@ -19,12 +20,14 @@ export function DocumentDetailModal({
   const [documentDetail, setDocumentDetail] = useState(initialDocument ?? null)
   const [isLoading, setIsLoading] = useState(false)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [isDownloadLoading, setIsDownloadLoading] = useState(false)
   const [error, setError] = useState(null)
   const showToast = useUiStore((state) => state.showToast)
 
   useEffect(() => {
     if (!isOpen) {
       setIsPreviewLoading(false)
+      setIsDownloadLoading(false)
       return undefined
     }
 
@@ -71,7 +74,7 @@ export function DocumentDetailModal({
   }, [isOpen, onClose])
 
   const handlePreview = async () => {
-    if (!documentDetail || isPreviewLoading) return
+    if (!documentDetail || isPreviewLoading || isDownloadLoading) return
 
     setIsPreviewLoading(true)
     try {
@@ -82,6 +85,21 @@ export function DocumentDetailModal({
       showToast(message, 'error')
     } finally {
       setIsPreviewLoading(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!documentDetail || isDownloadLoading || isPreviewLoading) return
+
+    setIsDownloadLoading(true)
+    try {
+      await downloadUploadedDocument(documentDetail)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Gagal mengunduh dokumen.'
+      showToast(message, 'error')
+    } finally {
+      setIsDownloadLoading(false)
     }
   }
 
@@ -248,12 +266,28 @@ export function DocumentDetailModal({
           className:
             'flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4',
         },
+        documentDetail &&
+          h(
+            'button',
+            {
+              type: 'button',
+              disabled: isDownloadLoading || isLoading || isPreviewLoading,
+              onClick: () => void handleDownload(),
+              className:
+                'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60',
+              title: 'Unduh file asli',
+            },
+            isDownloadLoading
+              ? h(Loader2, { className: 'h-4 w-4 animate-spin' })
+              : h(Download, { className: 'h-4 w-4' }),
+            isDownloadLoading ? 'Mengunduh...' : 'Unduh',
+          ),
         canPreview &&
           h(
             'button',
             {
               type: 'button',
-              disabled: isPreviewLoading || isLoading,
+              disabled: isPreviewLoading || isLoading || isDownloadLoading,
               onClick: () => void handlePreview(),
               className:
                 'inline-flex items-center justify-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60',

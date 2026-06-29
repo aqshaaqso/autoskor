@@ -91,6 +91,17 @@ export function mapExtractedIndicators(rawExtractions) {
   }
 }
 
+export function getCooperativeGeneralInfo(extractedIndicators) {
+  const items = extractedIndicators?.items ?? []
+
+  return items
+    .filter((item) => item.aspek === ASPEK.INFORMASI_UMUM)
+    .map((item) => ({
+      label: item.label,
+      displayValue: item.displayValue,
+    }))
+}
+
 export function getExtractedIndicatorsSummary(extractedIndicators) {
   if (!extractedIndicators?.hasData) return null
 

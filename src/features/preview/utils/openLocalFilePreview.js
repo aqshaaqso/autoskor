@@ -1,4 +1,4 @@
-import { canPreviewFile, isPdfFile } from './filePreview'
+import { canPreviewFile, isPdfFile } from '@/shared/utils/file'
 import { registerPreviewFile, revokePreview } from './previewSession'
 
 function revokeObjectUrlWhenWindowCloses(objectUrl, previewWindow) {
@@ -10,7 +10,7 @@ function revokeObjectUrlWhenWindowCloses(objectUrl, previewWindow) {
   }, 1000)
 }
 
-export function openFilePreview(file) {
+export function openLocalFilePreview(file) {
   if (!canPreviewFile(file)) return
 
   if (isPdfFile(file)) {
