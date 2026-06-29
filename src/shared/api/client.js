@@ -55,6 +55,9 @@ export function getApiErrorMessage(error, fallback = 'Terjadi kesalahan.') {
   if (typeof data?.detail === 'string' && data.detail.trim()) {
     return data.detail
   }
+  if (typeof data?.error === 'string' && data.error.trim()) {
+    return data.error
+  }
   if (error instanceof Error && error.message) {
     return error.message
   }

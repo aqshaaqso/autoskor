@@ -1,4 +1,9 @@
-import { formatFileSize, formatDateTime, formatDateTimeFull } from '@/shared/utils/format'
+import {
+  formatFileSize,
+  formatDateTime,
+  formatDateTimeFull,
+  formatProcessingDurationMinutes,
+} from '@/shared/utils/format'
 import {
   getMiddlewareStatusLabel,
   getUiDocumentStatusLabel,
@@ -53,6 +58,10 @@ export function buildDocumentDetailSections(document, options = {}) {
   ].filter(Boolean)
 
   const processingRows = [
+    buildRow(
+      'Waktu Diproses',
+      formatProcessingDurationMinutes(document.engineProcessingSeconds),
+    ),
     buildRow('Worker / Engine Job', document.workerId),
     showUploader &&
       document.uploadedBy &&

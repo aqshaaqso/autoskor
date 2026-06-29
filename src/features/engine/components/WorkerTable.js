@@ -83,7 +83,13 @@ export function WorkerTable({
                   { className: "font-medium text-slate-800" },
                   worker.name,
                 ),
-                h("p", { className: "text-xs text-slate-500" }, worker.id),
+                h(
+                  "p",
+                  { className: "text-xs text-slate-500" },
+                  worker.activeCount != null
+                    ? `${worker.activeCount} worker aktif`
+                    : worker.id,
+                ),
               ),
               h(
                 "td",

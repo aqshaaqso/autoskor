@@ -176,6 +176,42 @@ Response: binary file (PDF/DOCX). Dipakai untuk:
 
 ---
 
+### Status engine
+
+```
+GET /engine/status
+```
+
+Response agregat status engine & worker dari Redis discovery:
+
+```json
+{
+  "total": 2,
+  "available": 2,
+  "running": 2,
+  "processing": 0,
+  "stop": 0,
+  "worker_active_total": 2,
+  "worker_online_engines": 2,
+  "status": "healthy",
+  "engines": [
+    {
+      "name": "engine-1",
+      "status": "running",
+      "available": true,
+      "worker_status": {
+        "status": "online",
+        "active_count": 1
+      }
+    }
+  ]
+}
+```
+
+`503` → `{ "error": "string" }`. Frontend memetakan `engines[]` ke tabel worker di Engine Dashboard.
+
+---
+
 ### Engine callback (bukan untuk frontend)
 
 | Method | Path | Pemanggil |
@@ -316,7 +352,7 @@ Fitur berikut masih memakai **mock lokal**:
 | POST | `/auth/logout` | `VITE_USE_MOCK_AUTH` |
 | GET | `/admin/overview` | `VITE_USE_MOCK_ADMIN` |
 
-Engine dashboard mengagregasi data dari `GET /scoring-jobs` — endpoint `/engine/status` belum ada di middleware.
+Engine dashboard memanggil `GET /engine/status` untuk status worker/engine, lalu menggabungkannya dengan agregat `GET /scoring-jobs` (antrian, aktivitas terbaru, statistik dokumen). Jika `/engine/status` gagal (mis. `503`), UI fallback ke data scoring jobs saja.
 
 ---
 
@@ -331,6 +367,9 @@ shared/api/middlewareContract.js  → Mapping status API ↔ kode UI
 shared/api/scoringJobs/
   scoringJobsApi.js               → HTTP call middleware
   scoringJobsMapper.js            → Response → format UI (+ uploadedBy)
+shared/api/engine/
+  engineStatusApi.js              → GET /engine/status
+  engineStatusMapper.js           → Response → worker UI + merge scoring jobs
 shared/utils/documentStatusLabels.js → Label Indonesia dokumen
 shared/utils/engineStatusLabels.js   → Label Indonesia engine
 features/documents/api/documentsApi.js  → Wrapper scoring jobs

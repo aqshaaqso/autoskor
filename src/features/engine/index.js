@@ -1,4 +1,6 @@
 export { EngineDashboardPage } from './pages/EngineDashboardPage'
 export { WorkerSection } from './components/WorkerSection'
 export { WorkerTable } from './components/WorkerTable'
+export { EngineWorkersGrid } from './components/EngineWorkersGrid'
+export { EngineColumnCard } from './components/EngineColumnCard'
 export { getEngineStatus } from './api/engineApi'

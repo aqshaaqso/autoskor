@@ -29,31 +29,9 @@ function computeAverageProcessingMs(documents) {
   )
 }
 
-function buildWorkersFromProcessingDocuments(processingDocuments) {
-  const workerMap = new Map()
-
-  for (const document of processingDocuments) {
-    const workerId = document.workerId ?? `job-${document.id}`
-    if (workerMap.has(workerId)) continue
-
-    workerMap.set(workerId, {
-      id: workerId,
-      name: workerId,
-      status: 'running',
-      currentDocument: {
-        id: document.id,
-        fileName: document.fileName,
-        startedAt: document.processingStartedAt ?? document.uploadedAt ?? null,
-      },
-    })
-  }
-
-  return [...workerMap.values()]
-}
-
 function resolveClusterStatus(processingCount, queuedCount, override) {
   if (override !== undefined) return override
-  if (processingCount > 0) return 'running'
+  if (processingCount > 0) return 'working'
   if (queuedCount > 0) return 'waiting'
   return 'idle'
 }
@@ -104,11 +82,10 @@ export function buildEngineStatusFromDocuments(documents, options = {}) {
     clusterStatusOverride,
   )
 
-  const workers =
-    workersOverride ?? buildWorkersFromProcessingDocuments(processingDocuments)
+  const workers = workersOverride ?? []
   const isRunning = isRunningOverride ?? processingDocuments.length > 0
-  const workerCount = workerCountOverride ?? workers.length
-  const activeWorkerCount = activeWorkerCountOverride ?? workers.length
+  const workerCount = workerCountOverride ?? 0
+  const activeWorkerCount = activeWorkerCountOverride ?? 0
   const averageProcessingMs =
     averageProcessingMsOverride ?? computeAverageProcessingMs(documents)
 

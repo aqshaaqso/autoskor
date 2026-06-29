@@ -197,7 +197,7 @@ Label tampilan Bahasa Indonesia (badge, modal, engine) terpusat di:
 
 ### Engine (`/engine`, admin)
 
-Dashboard mengagregasi data dari `GET /scoring-jobs` (middleware tidak punya `/engine/status`). Komponen: `ClusterStatusPanel`, `EngineStatsGrid`, `RecentActivityList`, `WorkerSection`.
+Dashboard memanggil `GET /engine/status` (worker/engine) dan menggabungkannya dengan agregat `GET /scoring-jobs` (antrian & aktivitas). Komponen: `ClusterStatusPanel`, `EngineStatsGrid`, `RecentActivityList`, `WorkerSection`.
 
 ### Preview file
 

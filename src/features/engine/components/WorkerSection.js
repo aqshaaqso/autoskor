@@ -1,9 +1,53 @@
 import { createElement as h, useState } from 'react'
 import { ChevronDown, Server } from 'lucide-react'
-import { WorkerTable } from './WorkerTable'
+import { EngineWorkersGrid } from './EngineWorkersGrid'
 
-export function WorkerSection({ workers = [] }) {
+function resolveEngineColumns(engines = [], workers = []) {
+  if (engines.length > 0) return engines
+
+  if (!workers.length) return []
+
+  return [
+    {
+      id: 'antrian',
+      name: 'Dari antrian dokumen',
+      uiStatus: workers.some(
+        (worker) =>
+          worker.status === 'working' || worker.status === 'running',
+      )
+        ? 'working'
+        : 'idle',
+      workerClusterStatus: null,
+      activeCount: workers.length,
+      workers,
+    },
+  ]
+}
+
+function countActiveWorkers(engines) {
+  return engines.reduce(
+    (total, engine) => total + (engine.activeCount ?? 0),
+    0,
+  )
+}
+
+function countTotalWorkers(engines) {
+  return engines.reduce(
+    (total, engine) =>
+      total + (engine.workerCount ?? engine.workers?.length ?? 0),
+    0,
+  )
+}
+
+export function WorkerSection({
+  engines = [],
+  workers = [],
+  healthStatus = null,
+}) {
   const [isOpen, setIsOpen] = useState(true)
+  const columns = resolveEngineColumns(engines, workers)
+  const activeWorkers = countActiveWorkers(columns)
+  const totalWorkers = countTotalWorkers(columns)
 
   return h(
     'div',
@@ -27,12 +71,12 @@ export function WorkerSection({ workers = [] }) {
         h(
           'h2',
           { className: 'text-lg font-semibold text-slate-900' },
-          'Workers',
+          'Engine & Worker',
         ),
         h(
           'span',
           { className: 'text-sm text-slate-500' },
-          `(${workers.length})`,
+          `(${columns.length} engine · ${activeWorkers} dari ${totalWorkers} worker aktif)`,
         ),
       ),
       h(ChevronDown, {
@@ -42,8 +86,8 @@ export function WorkerSection({ workers = [] }) {
     isOpen &&
       h(
         'div',
-        { className: 'border-t border-slate-200 p-4' },
-        h(WorkerTable, { workers, embedded: true }),
+        { className: 'border-t border-slate-200 p-6' },
+        h(EngineWorkersGrid, { engines: columns, healthStatus }),
       ),
   )
 }

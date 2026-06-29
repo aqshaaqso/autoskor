@@ -1,12 +1,7 @@
 import { createElement as h } from 'react'
-import { Loader2 } from 'lucide-react'
 import { formatDateTime } from '@/shared/utils/format'
-import {
-  getClusterStatusClasses,
-  getClusterStatusLabel,
-} from '../utils/clusterStatus'
 
-export function ClusterStatusPanel({ engineStatus, clusterStatus }) {
+export function ClusterStatusPanel({ engineStatus }) {
   return h(
     'div',
     {
@@ -27,24 +22,14 @@ export function ClusterStatusPanel({ engineStatus, clusterStatus }) {
           'Status Worker',
         ),
         h(
-          'div',
-          { className: 'mt-2 flex items-center gap-3' },
+          'p',
+          { className: 'mt-2 text-sm text-slate-700' },
           h(
             'span',
-            {
-              className: `inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${getClusterStatusClasses(clusterStatus)}`,
-            },
-            getClusterStatusLabel(clusterStatus),
+            { className: 'font-semibold text-slate-900' },
+            `${engineStatus.activeWorkerCount ?? 0} dari ${engineStatus.workerCount ?? engineStatus.workers?.length ?? 0}`,
           ),
-          engineStatus.isRunning &&
-            h(Loader2, {
-              className: 'h-4 w-4 animate-spin text-primary-600',
-            }),
-        ),
-        h(
-          'p',
-          { className: 'mt-2 text-sm text-slate-500' },
-          `${engineStatus.activeWorkerCount ?? 0} dari ${engineStatus.workerCount ?? engineStatus.workers?.length ?? 0} worker aktif`,
+          ' worker aktif',
         ),
       ),
       h(

@@ -78,3 +78,20 @@ export function formatDateTimeFull(value) {
     timeStyle: 'medium',
   }).format(new Date(value))
 }
+
+export function formatProcessingDurationMinutes(seconds) {
+  if (seconds === null || seconds === undefined) return null
+
+  const num = Number(seconds)
+  if (!Number.isFinite(num) || num <= 0) return null
+
+  const minutes = num / 60
+  if (minutes < 1) return '< 1 menit'
+
+  const rounded = Math.round(minutes * 10) / 10
+  const formatted = Number.isInteger(rounded)
+    ? String(rounded)
+    : rounded.toFixed(1).replace('.', ',')
+
+  return `${formatted} menit`
+}

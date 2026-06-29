@@ -6,15 +6,13 @@ import {
 import { getFileExtension } from '@/shared/utils/file'
 import { mapExtractedIndicators } from '@/shared/utils/extractedIndicators'
 import {
-  getIndikatorMeta,
-  PREFERRED_INDIKATOR_KEY,
-} from '@/shared/constants/scoringIndicators'
+  resolveDetailIndikatorKey,
+  SCORING_DETAIL_INDICATORS,
+} from '@/shared/constants/scoringDetailIndicators'
 import {
   computePersentaseMaks,
   finalizeDetailRows,
-  groupIndikatorEntries,
   normalizeBobot,
-  selectIndikatorEntry,
   sumDetailSkor,
 } from '@/shared/utils/resultDetail'
 
@@ -143,7 +141,13 @@ export function mapScoringJobToDocument(job) {
     updatedAt: job.updated_at ?? null,
     uploadedBy: normalizeUploadedBy(job),
     workerId: job.engine_job_id ?? null,
-    processingStartedAt: job.started_at ?? null,
+    processingStartedAt:
+      pickFirstDefined(job.started_at, job.startedAt, job.waiting_at, job.waitingAt) ??
+      null,
+    engineProcessingSeconds: pickFirstDefined(
+      job.engine_processing_seconds,
+      job.engineProcessingSeconds,
+    ) ?? null,
     completedAt: status === 'done' ? job.finished_at ?? null : null,
     failedAt: status === 'failed' ? job.finished_at ?? null : null,
     failureReason: job.error_message ?? null,
@@ -183,27 +187,45 @@ function normalizeDetailRow(row) {
   }
 }
 
+function normalizeDetailIndikatorKeys(detailIndikator) {
+  const normalized = {}
+
+  for (const [rawKey, value] of Object.entries(detailIndikator)) {
+    const key = resolveDetailIndikatorKey(rawKey)
+    const existing = normalized[key]
+
+    if (
+      !existing ||
+      Number(value?.skor ?? 0) > Number(existing?.skor ?? 0)
+    ) {
+      normalized[key] = value
+    }
+  }
+
+  return normalized
+}
+
 function mapDetailIndikatorToRows(detailIndikator) {
   if (!detailIndikator || typeof detailIndikator !== 'object') return []
 
-  const groups = groupIndikatorEntries(detailIndikator, getIndikatorMeta)
+  const normalizedDetail = normalizeDetailIndikatorKeys(detailIndikator)
 
-  return [...groups.entries()].map(([groupKey, group]) => {
-    const selected = selectIndikatorEntry(group, PREFERRED_INDIKATOR_KEY[groupKey])
-    const nilai = selected.value?.nilai ?? 0
+  return SCORING_DETAIL_INDICATORS.map(({ key, aspek, komponen }) => {
+    const value = normalizedDetail[key]
+    const nilai = value?.nilai ?? 0
 
     return normalizeDetailRow({
-      aspek: selected.meta.aspek,
-      komponen: selected.meta.komponen,
-      nilaiRasio: selected.value?.rasio ?? 0,
+      aspek,
+      komponen,
+      nilaiRasio: value?.rasio ?? 0,
       nilai,
-      bobot: selected.value?.bobot ?? 0,
-      skor: selected.value?.skor ?? 0,
+      bobot: value?.bobot ?? 0,
+      skor: value?.skor ?? 0,
       persentaseMaks: computePersentaseMaks({
-        skor: selected.value?.skor,
-        bobot: selected.value?.bobot,
+        skor: value?.skor,
+        bobot: value?.bobot,
       }),
-      status: selected.value?.status,
+      status: value?.status,
     })
   })
 }
@@ -219,7 +241,7 @@ function resolveDetailRows(resultData) {
     resultData.detailIndikator,
   )
 
-  return finalizeDetailRows(mapDetailIndikatorToRows(detailIndikator))
+  return mapDetailIndikatorToRows(detailIndikator)
 }
 
 function usesDetailIndikatorSource(resultData) {

@@ -12,16 +12,39 @@ function formatUnknownKey(key) {
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function normalizeRawExtractionsInput(rawExtractions) {
+  if (!rawExtractions) return []
+
+  if (Array.isArray(rawExtractions)) {
+    return rawExtractions
+  }
+
+  if (!isPlainObject(rawExtractions)) {
+    return []
+  }
+
+  if (isPlainObject(rawExtractions.result)) {
+    return [rawExtractions]
+  }
+
+  return [{ result: rawExtractions }]
+}
+
 export function mergeRawExtractions(rawExtractions) {
-  if (!Array.isArray(rawExtractions) || rawExtractions.length === 0) {
+  const entries = normalizeRawExtractionsInput(rawExtractions)
+  if (entries.length === 0) {
     return {}
   }
 
   const merged = {}
 
-  for (const entry of rawExtractions) {
+  for (const entry of entries) {
     const result = entry?.result ?? entry
-    if (!result || typeof result !== 'object') continue
+    if (!isPlainObject(result)) continue
 
     for (const [key, value] of Object.entries(result)) {
       if (
@@ -87,7 +110,7 @@ export function mapExtractedIndicators(rawExtractions) {
       kotaKoperasi: merged.kota_koperasi ?? null,
       tahunLaporan: merged.tahun_laporan ?? null,
     },
-    hasData: rawExtractions?.length > 0,
+    hasData: Object.keys(merged).length > 0,
   }
 }
 

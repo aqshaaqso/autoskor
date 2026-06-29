@@ -32,7 +32,8 @@ export function useEngineStatus() {
     const shouldPoll =
       engineStatus.isRunning ||
       engineStatus.queueLength > 0 ||
-      engineStatus.processingCount > 0
+      engineStatus.processingCount > 0 ||
+      (engineStatus.activeWorkerCount ?? 0) > 0
 
     if (!shouldPoll) return
 

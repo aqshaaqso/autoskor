@@ -23,6 +23,9 @@ try {
     Show-Title "Health"
     Show-Json (Invoke-RestMethod -Method GET -Uri "$BaseUrl/health")
 
+    Show-Title "Engine status"
+    Show-Json (Invoke-RestMethod -Method GET -Uri "$BaseUrl/engine/status")
+
     Show-Title "List jobs (limit 3)"
     $list = Invoke-RestMethod -Method GET -Uri "$BaseUrl/scoring-jobs?limit=3&offset=0"
     Show-Json $list

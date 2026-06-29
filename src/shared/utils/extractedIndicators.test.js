@@ -23,6 +23,23 @@ describe('mergeRawExtractions', () => {
     expect(mergeRawExtractions([])).toEqual({})
     expect(mergeRawExtractions(null)).toEqual({})
   })
+
+  it('memproses format API dengan objek result', () => {
+    const merged = mergeRawExtractions({
+      result: {
+        nama_koperasi: 'KOPERASI KARYAWAN PERTAMINA DANA VENTURA',
+        kota_koperasi: 'Jakarta Selatan',
+        tahun_laporan: 2024,
+      },
+      model_name: 'qwen/test-model',
+    })
+
+    expect(merged).toEqual({
+      nama_koperasi: 'KOPERASI KARYAWAN PERTAMINA DANA VENTURA',
+      kota_koperasi: 'Jakarta Selatan',
+      tahun_laporan: 2024,
+    })
+  })
 })
 
 describe('mapExtractedIndicators', () => {
@@ -52,5 +69,23 @@ describe('getCooperativeGeneralInfo', () => {
     const info = getCooperativeGeneralInfo(mapped)
     expect(info.some((item) => item.label === 'Nama Koperasi')).toBe(true)
     expect(info.find((item) => item.label === 'Nama Koperasi')?.displayValue).toBe('Koperasi C')
+  })
+
+  it('mengambil informasi umum dari format API objek', () => {
+    const mapped = mapExtractedIndicators({
+      result: {
+        nama_koperasi: 'Koperasi D',
+        kota_koperasi: 'Medan',
+        tahun_laporan: 2024,
+      },
+      model_name: 'qwen/test-model',
+    })
+
+    const info = getCooperativeGeneralInfo(mapped)
+    expect(mapped.hasData).toBe(true)
+    expect(info).toHaveLength(3)
+    expect(info.find((item) => item.label === 'Nama Koperasi')?.displayValue).toBe('Koperasi D')
+    expect(info.find((item) => item.label === 'Kota Koperasi')?.displayValue).toBe('Medan')
+    expect(info.find((item) => item.label === 'Tahun Laporan')?.displayValue).toBe('2024')
   })
 })
