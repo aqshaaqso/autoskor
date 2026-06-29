@@ -3,9 +3,44 @@ function toFiniteNumber(value, fallback = 0) {
   return Number.isFinite(num) ? num : fallback
 }
 
-export function formatRasio(value) {
+export function formatRasio(value, options = {}) {
   if (typeof value === 'string') return value
-  return `${toFiniteNumber(value).toFixed(2)}%`
+
+  const num = toFiniteNumber(value)
+  if (num === 0 && options.treatZeroAsUnavailable) return '-'
+
+  return `${num.toFixed(2)}%`
+}
+
+export function formatNilaiRasio(nilaiRasio, skor) {
+  return formatRasio(nilaiRasio, {
+    treatZeroAsUnavailable: toFiniteNumber(skor) > 0 && toFiniteNumber(nilaiRasio) === 0,
+  })
+}
+
+export function formatPersentaseMaks(value) {
+  const num = toFiniteNumber(value)
+  return `${Math.round(num)}%`
+}
+
+export function formatCurrency(value) {
+  if (value === null || value === undefined || value === '') return '-'
+
+  const num = Number(value)
+  if (!Number.isFinite(num)) return String(value)
+
+  return new Intl.NumberFormat('id-ID', {
+    maximumFractionDigits: 0,
+  }).format(num)
+}
+
+export function formatExtractedValue(value, format = 'text') {
+  if (value === null || value === undefined || value === '') return '-'
+
+  if (format === 'currency') return formatCurrency(value)
+  if (format === 'year') return String(value)
+
+  return String(value)
 }
 
 export function formatSkor(value) {

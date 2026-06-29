@@ -3,7 +3,6 @@ import { Loader2, Trash2 } from 'lucide-react'
 import { useDocumentStore } from '../store/useDocumentStore'
 import { ConfirmDialog } from '@/shared/ui'
 import { useUiStore } from '@/shared/store'
-import { USE_MOCK_DOCUMENTS } from '@/shared/api/config'
 
 const btnDanger =
   'inline-flex items-center justify-center gap-2 rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-sm font-medium text-danger-700 transition-colors hover:bg-danger-100 disabled:cursor-not-allowed disabled:opacity-60'
@@ -22,10 +21,8 @@ export function ClearAllDocumentsButton() {
 
   const queueCount = queuePagination.total
   const processedCount = processedPagination.total
-  const totalDocuments = queueCount + processedCount
 
-  if (totalDocuments === 0) return null
-  if (!USE_MOCK_DOCUMENTS && queueCount === 0) return null
+  if (queueCount === 0) return null
 
   const handleConfirm = async () => {
     try {
@@ -58,9 +55,7 @@ export function ClearAllDocumentsButton() {
     h(ConfirmDialog, {
       isOpen: confirmOpen,
       title: 'Hapus Semua Dokumen?',
-      message: USE_MOCK_DOCUMENTS
-        ? `Hapus ${totalDocuments} dokumen dari antrian dan hasil? Tindakan ini tidak dapat dibatalkan.`
-        : `Batalkan ${queueCount} dokumen di antrian? Dokumen selesai (${processedCount}) tidak akan dihapus.`,
+      message: `Batalkan ${queueCount} dokumen di antrian? Dokumen selesai (${processedCount}) tidak akan dihapus.`,
       confirmLabel: 'Ya, Hapus Semua',
       cancelLabel: 'Batal',
       isLoading: isClearingAllDocuments,

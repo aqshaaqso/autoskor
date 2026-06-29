@@ -1,7 +1,6 @@
 import { createElement as h, useEffect } from 'react'
+import { DOCUMENT_POLL_INTERVAL_MS } from '../constants'
 import { useDocumentStore } from '../store/useDocumentStore'
-
-const POLL_INTERVAL_MS = 3000
 
 export function DocumentWatcher() {
   const hasPendingDocuments = useDocumentStore(
@@ -18,10 +17,13 @@ export function DocumentWatcher() {
   useEffect(() => {
     if (!hasPendingDocuments) return
 
-    const interval = setInterval(
-      () => void checkDocumentStatusUpdates(),
-      POLL_INTERVAL_MS,
-    )
+    const poll = () => {
+      if (document.visibilityState === 'visible') {
+        void checkDocumentStatusUpdates()
+      }
+    }
+
+    const interval = setInterval(poll, DOCUMENT_POLL_INTERVAL_MS)
     return () => clearInterval(interval)
   }, [hasPendingDocuments, checkDocumentStatusUpdates])
 

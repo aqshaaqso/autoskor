@@ -4,8 +4,8 @@ import {
   SCORING_JOBS_LIST_LIMIT,
   UI_FILTER_TO_MIDDLEWARE_STATUS,
 } from './constants'
+import { filterDocumentsByStatus } from '@/shared/utils/documentFilters'
 import {
-  filterDocumentsByStatus,
   mapScoringJobToDocument,
   mapScoringJobToDocumentResult,
 } from './scoringJobsMapper'

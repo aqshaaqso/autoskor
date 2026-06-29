@@ -3,7 +3,12 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import { useDocumentStore } from '../store/useDocumentStore'
 import { DownloadResultPdfButton } from '../components/DownloadResultPdfButton'
-import { ResultsTable, ScoreSummary, TidakDapatDihitungPanel } from '@/features/results'
+import {
+  ExtractedIndicatorsPanel,
+  ResultsTable,
+  ScoreSummary,
+  TidakDapatDihitungPanel,
+} from '@/features/results'
 
 export function ProcessedDetailPage() {
   const { id } = useParams()
@@ -21,9 +26,6 @@ export function ProcessedDetailPage() {
   }, [id, fetchDocumentResults, clearDocumentResult])
 
   const hasSidePanel = Boolean(documentResult?.results?.tidakDapatDihitung)
-  const resultsGridClass = hasSidePanel
-    ? 'grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start'
-    : 'grid gap-6'
 
   return h(
     'div',
@@ -119,15 +121,14 @@ export function ProcessedDetailPage() {
           h(DownloadResultPdfButton, { documentResult }),
         ),
         h(ScoreSummary, { results: documentResult.results }),
-        h(
-          'div',
-          { className: resultsGridClass },
-          h(ResultsTable, { detail: documentResult.results.detail }),
-          hasSidePanel &&
-            h(TidakDapatDihitungPanel, {
-              data: documentResult.results.tidakDapatDihitung,
-            }),
-        ),
+        h(ResultsTable, { detail: documentResult.results.detail }),
+        hasSidePanel &&
+          h(TidakDapatDihitungPanel, {
+            data: documentResult.results.tidakDapatDihitung,
+          }),
+        h(ExtractedIndicatorsPanel, {
+          extractedIndicators: documentResult.results.extractedIndicators,
+        }),
       ),
   )
 }

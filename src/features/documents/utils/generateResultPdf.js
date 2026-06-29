@@ -1,9 +1,11 @@
 import { jsPDF } from 'jspdf'
 import { autoTable } from 'jspdf-autotable'
+import { getConsecutiveAspekMeta } from '@/shared/constants/aspek'
 import {
   formatDateTime,
   formatDateTimeFull,
-  formatRasio,
+  formatNilaiRasio,
+  formatPersentaseMaks,
   formatSkor,
 } from '@/shared/utils/format'
 
@@ -53,32 +55,27 @@ function getPredikatTextColor(predikat) {
 }
 
 function buildDetailRows(detail) {
-  const aspekRowSpans = detail.reduce((acc, row) => {
-    acc[row.aspek] = (acc[row.aspek] ?? 0) + 1
-    return acc
-  }, {})
+  const aspekMeta = getConsecutiveAspekMeta(detail)
 
-  const aspekRendered = new Set()
-
-  return detail.map((row) => {
+  return detail.map((row, index) => {
     const cells = []
+    const { showAspek, aspekRowSpan } = aspekMeta[index]
 
-    if (!aspekRendered.has(row.aspek)) {
-      aspekRendered.add(row.aspek)
+    if (showAspek) {
       cells.push({
         content: row.aspek,
-        rowSpan: aspekRowSpans[row.aspek],
+        rowSpan: aspekRowSpan,
         styles: { fontStyle: 'bold', valign: 'top' },
       })
     }
 
     cells.push(
       row.komponen,
-      formatRasio(row.nilaiRasio),
+      formatNilaiRasio(row.nilaiRasio, row.skor),
       String(row.nilai),
       String(row.bobot),
       formatSkor(toNumber(row.skor)),
-      `${toNumber(row.persentaseMaks)}%`,
+      formatPersentaseMaks(row.persentaseMaks),
       row.status,
     )
 

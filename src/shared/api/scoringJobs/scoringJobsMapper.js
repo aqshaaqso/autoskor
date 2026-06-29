@@ -3,147 +3,23 @@ import {
   getPredikatFromPersentase,
   getStatusFromPersentase,
 } from '@/shared/utils/colorGrading'
-
-const INDIKATOR_META = {
-  skor_modal_sendiri_total_asset: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Modal Sendiri terhadap Total Asset',
-  },
-  skor_modal_sendiri_pinjaman_berisiko: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Modal Sendiri terhadap Pinjaman Berisiko',
-  },
-  skor_kecukupan_modal_sendiri: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Kecukupan Modal Sendiri',
-  },
-  skor_volume_pinjaman_anggota: {
-    aspek: 'Kualitas Aktiva Produktif',
-    komponen: 'Rasio Volume Pinjaman pada Anggota',
-  },
-  skor_kualitas_aktiva_produktif: {
-    aspek: 'Kualitas Aktiva Produktif',
-    komponen: 'Rasio Kualitas Aktiva Produktif',
-  },
-  skor_aktiva_produktif_bermasalah: {
-    aspek: 'Kualitas Aktiva Produktif',
-    komponen: 'Rasio Aktiva Produktif Bermasalah',
-  },
-  skor_cadangan_kerugian_pinjaman: {
-    aspek: 'Kualitas Aktiva Produktif',
-    komponen: 'Rasio Cadangan Kerugian Pinjaman',
-  },
-  skor_cadangan_risiko: {
-    aspek: 'Kualitas Aktiva Produktif',
-    komponen: 'Rasio Cadangan Risiko',
-  },
-  skor_modal: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Modal Sendiri terhadap Total Asset',
-  },
-  skor_pinjaman: {
-    aspek: 'Kualitas Aktiva Produktif',
-    komponen: 'Rasio Volume Pinjaman pada Anggota',
-  },
-  skor_kecukupan_modal: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Kecukupan Modal Sendiri',
-  },
-  skor_efisiensi_operasi: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Efisiensi Operasional',
-  },
-  skor_partisipasi_bruto: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Efisiensi Operasional',
-  },
-  skor_pinjaman_berisiko: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Modal Sendiri terhadap Pinjaman Berisiko',
-  },
-  skor_rentabilitas_aset: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Rentabilitas Aktiva',
-  },
-  skor_rentabilitas_modal: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Rentabilitas Modal',
-  },
-  skor_efisiensi_pelayanan: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Efisiensi Pelayanan',
-  },
-  skor_efisiensi_beban_usaha: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Efisiensi Beban Usaha',
-  },
-  skor_kemandirian_operasional: {
-    aspek: 'Kemandirian dan Pertumbuhan',
-    komponen: 'Rasio Kemandirian Operasional',
-  },
-  skor_modal_pinjaman_berisiko: {
-    aspek: 'Permodalan',
-    komponen: 'Rasio Modal Sendiri terhadap Pinjaman Berisiko',
-  },
-  skor_promosi_ekonomi_anggota: {
-    aspek: 'Kemandirian dan Pertumbuhan',
-    komponen: 'Rasio Promosi Ekonomi Anggota',
-  },
-  skor_risiko_pinjaman_bermasalah: {
-    aspek: 'Kualitas Aktiva Produktif',
-    komponen: 'Rasio Aktiva Produktif Bermasalah',
-  },
-  skor_efisiensi_operasional: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Efisiensi Operasional',
-  },
-  skor_efisiensi_pembiayaan: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Efisiensi Pembiayaan',
-  },
-  skor_efisiensi_total: {
-    aspek: 'Efisiensi',
-    komponen: 'Rasio Efisiensi Total',
-  },
-  skor_kas: {
-    aspek: 'Likuiditas',
-    komponen: 'Rasio Kas terhadap Kewajiban Jangka Pendek',
-  },
-  skor_likuiditas: {
-    aspek: 'Likuiditas',
-    komponen: 'Rasio Likuiditas',
-  },
-  skor_pertumbuhan_anggota: {
-    aspek: 'Kemandirian dan Pertumbuhan',
-    komponen: 'Rasio Pertumbuhan Anggota',
-  },
-  skor_pertumbuhan_volume_pinjaman: {
-    aspek: 'Kemandirian dan Pertumbuhan',
-    komponen: 'Rasio Pertumbuhan Volume Pinjaman',
-  },
-  skor_kemandirian_pembiayaan: {
-    aspek: 'Kemandirian dan Pertumbuhan',
-    komponen: 'Rasio Kemandirian Pembiayaan',
-  },
-  skor_partisipasi_modal_anggota: {
-    aspek: 'Jatidiri Koperasi',
-    komponen: 'Rasio Partisipasi Modal Anggota',
-  },
-  skor_kepesertaan_anggota: {
-    aspek: 'Jatidiri Koperasi',
-    komponen: 'Rasio Kepesertaan Anggota',
-  },
-}
+import { getFileExtension } from '@/shared/utils/file'
+import { mapExtractedIndicators } from '@/shared/utils/extractedIndicators'
+import {
+  getIndikatorMeta,
+  PREFERRED_INDIKATOR_KEY,
+} from '@/shared/constants/scoringIndicators'
+import {
+  computePersentaseMaks,
+  finalizeDetailRows,
+  groupIndikatorEntries,
+  normalizeBobot,
+  selectIndikatorEntry,
+  sumDetailSkor,
+} from '@/shared/utils/resultDetail'
 
 function pickFirstDefined(...values) {
   return values.find((value) => value !== undefined && value !== null)
-}
-
-function getFileExtension(fileName) {
-  if (!fileName || typeof fileName !== 'string') return null
-  const dotIndex = fileName.lastIndexOf('.')
-  if (dotIndex <= 0) return null
-  return fileName.slice(dotIndex + 1).toLowerCase()
 }
 
 function normalizeUploadedByUser(rawUser) {
@@ -277,42 +153,6 @@ export function mapScoringJobToDocument(job) {
   }
 }
 
-function normalizeBobot(bobot) {
-  const value = Number(bobot ?? 0)
-  if (value > 0 && value <= 1) return value * 100
-  return value
-}
-
-function computePersentaseMaks({ skor, bobot, nilai, persentaseMaks }) {
-  if (persentaseMaks !== undefined && persentaseMaks !== null) {
-    return persentaseMaks
-  }
-
-  const normalizedBobot = normalizeBobot(bobot)
-  const numericSkor = Number(skor ?? 0)
-
-  if (normalizedBobot > 0 && Number.isFinite(numericSkor)) {
-    return (numericSkor / normalizedBobot) * 100
-  }
-
-  return nilai ?? 0
-}
-
-function formatIndikatorKey(key) {
-  const label = key.replace(/^skor_/, '').replaceAll('_', ' ')
-  return label.charAt(0).toUpperCase() + label.slice(1)
-}
-
-function getIndikatorMeta(key) {
-  const meta = INDIKATOR_META[key]
-  if (meta) return meta
-
-  return {
-    aspek: 'Penilaian Kesehatan',
-    komponen: formatIndikatorKey(key),
-  }
-}
-
 function normalizeRowStatus(status, nilai) {
   if (status === 'Hijau' || status === 'Kuning' || status === 'Merah') {
     return status
@@ -337,7 +177,6 @@ function normalizeDetailRow(row) {
     persentaseMaks: computePersentaseMaks({
       skor: row.skor,
       bobot: row.bobot,
-      nilai,
       persentaseMaks: pickFirstDefined(row.persentaseMaks, row.persentase_maks),
     }),
     status: normalizeRowStatus(row.status, nilai),
@@ -347,23 +186,24 @@ function normalizeDetailRow(row) {
 function mapDetailIndikatorToRows(detailIndikator) {
   if (!detailIndikator || typeof detailIndikator !== 'object') return []
 
-  return Object.entries(detailIndikator).map(([key, value]) => {
-    const meta = getIndikatorMeta(key)
-    const nilai = value?.nilai ?? 0
+  const groups = groupIndikatorEntries(detailIndikator, getIndikatorMeta)
+
+  return [...groups.entries()].map(([groupKey, group]) => {
+    const selected = selectIndikatorEntry(group, PREFERRED_INDIKATOR_KEY[groupKey])
+    const nilai = selected.value?.nilai ?? 0
 
     return normalizeDetailRow({
-      aspek: meta.aspek,
-      komponen: meta.komponen,
-      nilaiRasio: value?.rasio ?? 0,
+      aspek: selected.meta.aspek,
+      komponen: selected.meta.komponen,
+      nilaiRasio: selected.value?.rasio ?? 0,
       nilai,
-      bobot: value?.bobot ?? 0,
-      skor: value?.skor ?? 0,
+      bobot: selected.value?.bobot ?? 0,
+      skor: selected.value?.skor ?? 0,
       persentaseMaks: computePersentaseMaks({
-        skor: value?.skor,
-        bobot: value?.bobot,
-        nilai,
+        skor: selected.value?.skor,
+        bobot: selected.value?.bobot,
       }),
-      status: value?.status,
+      status: selected.value?.status,
     })
   })
 }
@@ -371,14 +211,20 @@ function mapDetailIndikatorToRows(detailIndikator) {
 function resolveDetailRows(resultData) {
   const legacyDetail = resultData.detail
   if (Array.isArray(legacyDetail) && legacyDetail.length > 0) {
-    return legacyDetail.map(normalizeDetailRow)
+    return finalizeDetailRows(legacyDetail.map(normalizeDetailRow))
   }
 
   const detailIndikator = pickFirstDefined(
     resultData.detail_indikator,
     resultData.detailIndikator,
   )
-  return mapDetailIndikatorToRows(detailIndikator)
+
+  return finalizeDetailRows(mapDetailIndikatorToRows(detailIndikator))
+}
+
+function usesDetailIndikatorSource(resultData) {
+  const legacyDetail = resultData.detail
+  return !(Array.isArray(legacyDetail) && legacyDetail.length > 0)
 }
 
 function normalizeTidakDapatDihitung(data) {
@@ -405,18 +251,28 @@ export function mapResultDataToUiResults(resultData) {
     85,
   )
 
-  const totalSkorParsial = pickFirstDefined(
-    resultData.totalSkorParsial,
-    resultData.total_skor_parsial,
-    resultData.total_skor,
-    0,
-  )
+  const detail = resolveDetailRows(resultData)
+  const detailSkorSum = sumDetailSkor(detail)
+  const fromDetailIndikator = usesDetailIndikatorSource(resultData)
+
+  const totalSkorParsial = fromDetailIndikator && detail.length > 0
+    ? detailSkorSum
+    : pickFirstDefined(
+        resultData.totalSkorParsial,
+        resultData.total_skor_parsial,
+        resultData.total_skor,
+        detailSkorSum,
+        0,
+      )
 
   let persentaseParsial = pickFirstDefined(
     resultData.persentaseParsial,
     resultData.persentase_parsial,
   )
-  if (persentaseParsial === undefined || persentaseParsial === null) {
+  if (
+    (persentaseParsial === undefined || persentaseParsial === null) ||
+    fromDetailIndikator
+  ) {
     persentaseParsial =
       bobotDapatDihitung > 0 ? (totalSkorParsial / bobotDapatDihitung) * 100 : 0
   }
@@ -433,7 +289,10 @@ export function mapResultDataToUiResults(resultData) {
     tidakDapatDihitung: normalizeTidakDapatDihitung(
       resultData.tidakDapatDihitung ?? resultData.tidak_dapat_dihitung,
     ),
-    detail: resolveDetailRows(resultData),
+    extractedIndicators: mapExtractedIndicators(
+      pickFirstDefined(resultData.raw_extractions, resultData.rawExtractions),
+    ),
+    detail,
   }
 }
 
@@ -451,32 +310,3 @@ export function mapScoringJobToDocumentResult(job) {
   }
 }
 
-function isVisibleDocument(doc) {
-  return doc.status !== 'canceled' && doc.middlewareStatus !== 'canceled'
-}
-
-export function filterDocumentsByStatus(documents, status) {
-  const visibleDocuments = documents.filter(isVisibleDocument)
-
-  if (status === 'queue') {
-    return visibleDocuments.filter(
-      (doc) => doc.status === 'queued' || doc.status === 'processing',
-    )
-  }
-
-  if (status === 'done') {
-    return visibleDocuments.filter((doc) => doc.status === 'done')
-  }
-
-  if (status === 'failed') {
-    return visibleDocuments.filter((doc) => doc.status === 'failed')
-  }
-
-  if (status === 'processed') {
-    return visibleDocuments.filter(
-      (doc) => doc.status === 'done' || doc.status === 'failed',
-    )
-  }
-
-  return visibleDocuments
-}

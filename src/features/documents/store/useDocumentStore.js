@@ -8,7 +8,6 @@ import {
   clearAllDocuments as clearAllDocumentsApi,
 } from '../api/documentsApi'
 import { getApiErrorMessage } from '@/shared/api/client'
-import { USE_MOCK_DOCUMENTS } from '@/shared/api/config'
 import { DEFAULT_TABLE_PAGE_SIZE } from '@/shared/constants/pagination'
 import { useUiStore } from '@/shared/store'
 
@@ -192,16 +191,6 @@ export const useDocumentStore = create((set, get) => ({
       set({
         queueDocuments: [],
         queuePagination: createPaginationState(get().queuePagination.limit),
-        ...(USE_MOCK_DOCUMENTS
-          ? {
-              processedDocuments: [],
-              processedPagination: createPaginationState(
-                get().processedPagination.limit,
-              ),
-              documentResult: null,
-              resultError: null,
-            }
-          : null),
         documentStatusMap: {},
         hasPendingDocuments: false,
         isClearingAllDocuments: false,
@@ -212,11 +201,9 @@ export const useDocumentStore = create((set, get) => ({
         get().fetchProcessedDocuments({ offset: 0 }),
       ])
 
-      const toastMessage = USE_MOCK_DOCUMENTS
-        ? (result?.message ?? 'Semua dokumen berhasil dihapus.')
-        : result?.cleared > 0
-          ? `${result.cleared} dokumen diantrian dibatalkan. Dokumen selesai tetap tersimpan.`
-          : 'Tidak ada dokumen aktif di antrian. Dokumen selesai tetap tersimpan.'
+      const toastMessage = result?.cleared > 0
+        ? `${result.cleared} dokumen diantrian dibatalkan. Dokumen selesai tetap tersimpan.`
+        : 'Tidak ada dokumen aktif di antrian. Dokumen selesai tetap tersimpan.'
 
       useUiStore.getState().showToast(toastMessage, 'success')
     } catch (err) {
@@ -328,10 +315,11 @@ export const useDocumentStore = create((set, get) => ({
         hasPendingDocuments: hasPending,
       })
 
-      if (statusChanged) {
+      if (hasPending || statusChanged) {
         void get().fetchQueueDocuments()
-        void get().fetchProcessedDocuments()
-      } else if (hasNewlyCompleted || hasNewlyFailed) {
+      }
+
+      if (statusChanged || hasNewlyCompleted || hasNewlyFailed) {
         void get().fetchProcessedDocuments()
       }
     } catch (err) {

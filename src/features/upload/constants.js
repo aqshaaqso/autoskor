@@ -1,9 +1,4 @@
-export const ACCEPTED_TYPES = {
-  "application/pdf": [".pdf"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
-    ".docx",
-  ],
-};
+export { ACCEPTED_TYPES } from '@/shared/constants/fileTypes'
 
 export function getQueueStatusLabel(status) {
   switch (status) {

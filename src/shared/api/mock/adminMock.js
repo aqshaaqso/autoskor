@@ -1,8 +1,7 @@
 import { getActivityLog } from './activityMock'
 import { mockUsers, toPublicUser } from './authMock'
-import { getMockDocuments } from './documentsMock'
 
-function buildUserStats(documents, activityLog) {
+function buildUserStats(activityLog) {
   const statsByUserId = new Map(
     mockUsers.map((user) => [
       user.id,
@@ -17,35 +16,13 @@ function buildUserStats(documents, activityLog) {
     ]),
   )
 
-  for (const doc of documents) {
-    const userId = doc.uploadedBy?.id
-    if (!userId) continue
-
-    const stats = statsByUserId.get(userId)
-    if (!stats) continue
-
-    stats.uploadCount += 1
-
-    if (doc.status === 'done') {
-      stats.completedCount += 1
-    } else if (doc.status === 'failed') {
-      stats.failedCount += 1
-    } else if (doc.status === 'queued' || doc.status === 'processing') {
-      stats.pendingCount += 1
-    }
-
-    const docActivityAt = doc.uploadedAt
-    if (
-      !stats.lastActivityAt ||
-      new Date(docActivityAt) > new Date(stats.lastActivityAt)
-    ) {
-      stats.lastActivityAt = docActivityAt
-    }
-  }
-
   for (const entry of activityLog) {
     const stats = statsByUserId.get(entry.userId)
     if (!stats) continue
+
+    if (entry.type === 'upload') {
+      stats.uploadCount += 1
+    }
 
     if (
       !stats.lastActivityAt ||
@@ -62,17 +39,14 @@ function buildUserStats(documents, activityLog) {
   })
 }
 
-function buildTotals(users, documents, activityLog) {
-  const pendingDocuments = documents.filter(
-    (doc) => doc.status === 'queued' || doc.status === 'processing',
-  ).length
-  const completedDocuments = documents.filter((doc) => doc.status === 'done').length
+function buildTotals(users, activityLog) {
+  const uploadCount = activityLog.filter((entry) => entry.type === 'upload').length
 
   return {
     userCount: users.length,
-    totalUploads: documents.length,
-    pendingDocuments,
-    completedDocuments,
+    totalUploads: uploadCount,
+    pendingDocuments: 0,
+    completedDocuments: 0,
     activityCount: activityLog.length,
   }
 }
@@ -93,10 +67,9 @@ function getActivityTypeLabel(type) {
 export async function mockGetAdminOverview() {
   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  const documents = getMockDocuments()
   const activityLog = getActivityLog()
-  const users = buildUserStats(documents, activityLog)
-  const totals = buildTotals(users, documents, activityLog)
+  const users = buildUserStats(activityLog)
+  const totals = buildTotals(users, activityLog)
 
   const recentActivity = activityLog.map((entry) => ({
     ...entry,

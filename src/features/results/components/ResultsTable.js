@@ -1,141 +1,122 @@
 import { createElement as h } from 'react'
-import { StatusBadge } from './StatusBadge'
-import { formatNumber, formatRasio, formatSkor } from '@/shared/utils/format'
+import { formatNilaiRasio, formatNumber, formatSkor } from '@/shared/utils/format'
 
-function ScoreRow({ row, showAspek, aspekRowSpan }) {
+function getIndicatorCardStyles(status) {
+  switch (status) {
+    case 'Hijau':
+      return {
+        border: 'border-success-200 hover:border-success-300',
+        score: 'text-success-600',
+      }
+    case 'Kuning':
+      return {
+        border: 'border-warning-200 hover:border-warning-300',
+        score: 'text-warning-600',
+      }
+    case 'Merah':
+      return {
+        border: 'border-danger-200 hover:border-danger-300',
+        score: 'text-danger-600',
+      }
+    default:
+      return {
+        border: 'border-slate-200 hover:border-slate-300',
+        score: 'text-slate-600',
+      }
+  }
+}
+
+function IndicatorScoreCard({ row }) {
+  const styles = getIndicatorCardStyles(row.status)
+  const title = `${row.aspek} - ${row.komponen}`
+
   return h(
-    'tr',
-    { className: 'border-b border-slate-100 transition-colors hover:bg-slate-50/80' },
-    showAspek &&
+    'article',
+    {
+      className: `flex h-full flex-col justify-between rounded-2xl border bg-white p-5 transition-all duration-300 hover:-translate-y-1 ${styles.border}`,
+      title,
+    },
+    h(
+      'div',
+      null,
       h(
-        'td',
+        'h4',
         {
-          className: 'px-4 py-3 align-top font-medium text-slate-800',
-          rowSpan: aspekRowSpan,
+          className:
+            'mb-3 line-clamp-2 text-sm font-bold leading-snug text-slate-700',
         },
-        row.aspek,
+        title,
       ),
-    h('td', { className: 'px-4 py-3 text-slate-600' }, row.komponen),
-    h(
-      'td',
-      { className: 'px-4 py-3 text-right font-mono text-slate-700' },
-      formatRasio(row.nilaiRasio),
+      h(
+        'div',
+        { className: 'space-y-1.5' },
+        h(
+          'div',
+          { className: 'flex justify-between text-xs' },
+          h('span', { className: 'font-medium text-slate-400' }, 'Rasio Keuangan:'),
+          h(
+            'span',
+            { className: 'font-bold text-slate-700' },
+            formatNilaiRasio(row.nilaiRasio, row.skor),
+          ),
+        ),
+        h(
+          'div',
+          { className: 'flex justify-between text-xs' },
+          h('span', { className: 'font-medium text-slate-400' }, 'Nilai Matriks:'),
+          h(
+            'span',
+            { className: 'font-bold text-slate-700' },
+            `${formatNumber(row.nilai, 0)} / 100`,
+          ),
+        ),
+      ),
     ),
     h(
-      'td',
-      { className: 'px-4 py-3 text-right text-slate-700' },
-      formatNumber(row.nilai, 0),
-    ),
-    h('td', { className: 'px-4 py-3 text-right text-slate-700' }, row.bobot),
-    h(
-      'td',
-      { className: 'px-4 py-3 text-right font-medium text-slate-800' },
-      formatSkor(row.skor),
-    ),
-    h(
-      'td',
-      { className: 'px-4 py-3 text-right text-slate-700' },
-      `${formatNumber(row.persentaseMaks, 0)}%`,
-    ),
-    h(
-      'td',
-      { className: 'px-4 py-3 text-center' },
-      h(StatusBadge, { status: row.status }),
+      'div',
+      {
+        className:
+          'mt-4 flex items-center justify-between border-t border-slate-100 pt-3',
+      },
+      h(
+        'span',
+        {
+          className:
+            'text-[10px] font-bold uppercase tracking-wider text-slate-400',
+        },
+        'Skor Akhir',
+      ),
+      h(
+        'span',
+        { className: `text-base font-extrabold ${styles.score}` },
+        formatSkor(row.skor),
+      ),
     ),
   )
 }
 
-function getConsecutiveAspekMeta(detail) {
-  return detail.map((row, index) => {
-    const isGroupStart =
-      index === 0 || detail[index - 1].aspek !== row.aspek
-
-    if (!isGroupStart) {
-      return { showAspek: false, aspekRowSpan: 1 }
-    }
-
-    let aspekRowSpan = 1
-    while (
-      index + aspekRowSpan < detail.length &&
-      detail[index + aspekRowSpan].aspek === row.aspek
-    ) {
-      aspekRowSpan += 1
-    }
-
-    return { showAspek: true, aspekRowSpan }
-  })
-}
-
 export function ResultsTable({ detail = [] }) {
-  const aspekMeta = getConsecutiveAspekMeta(detail)
+  if (detail.length === 0) return null
 
   return h(
     'div',
-    { className: 'overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm' },
+    {
+      className:
+        'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8',
+    },
+    h(
+      'h3',
+      { className: 'mb-6 text-lg font-semibold text-slate-800' },
+      'Detail Penilaian Indikator',
+    ),
     h(
       'div',
-      { className: 'overflow-x-auto' },
-      h(
-        'table',
-        { className: 'w-full min-w-[900px] text-left text-sm' },
-        h(
-          'thead',
-          null,
-          h(
-            'tr',
-            { className: 'border-b border-slate-200 bg-slate-50' },
-            h('th', { className: 'px-4 py-3 font-semibold text-slate-700' }, 'Aspek'),
-            h(
-              'th',
-              { className: 'px-4 py-3 font-semibold text-slate-700' },
-              'Komponen / Rasio',
-            ),
-            h(
-              'th',
-              { className: 'px-4 py-3 text-right font-semibold text-slate-700' },
-              'Nilai Rasio',
-            ),
-            h(
-              'th',
-              { className: 'px-4 py-3 text-right font-semibold text-slate-700' },
-              'Nilai',
-            ),
-            h(
-              'th',
-              { className: 'px-4 py-3 text-right font-semibold text-slate-700' },
-              'Bobot',
-            ),
-            h(
-              'th',
-              { className: 'px-4 py-3 text-right font-semibold text-slate-700' },
-              'Skor',
-            ),
-            h(
-              'th',
-              { className: 'px-4 py-3 text-right font-semibold text-slate-700' },
-              '% thd Maks',
-            ),
-            h(
-              'th',
-              { className: 'px-4 py-3 text-center font-semibold text-slate-700' },
-              'Status',
-            ),
-          ),
-        ),
-        h(
-          'tbody',
-          null,
-          detail.map((row, index) => {
-            const { showAspek, aspekRowSpan } = aspekMeta[index]
-
-            return h(ScoreRow, {
-              key: `${row.aspek}-${row.komponen}-${index}`,
-              row,
-              showAspek,
-              aspekRowSpan,
-            })
-          }),
-        ),
+      { className: 'grid grid-cols-2 gap-6' },
+      detail.map((row, index) =>
+        h(IndicatorScoreCard, {
+          key: `${row.aspek}-${row.komponen}-${index}`,
+          row,
+        }),
       ),
     ),
   )
