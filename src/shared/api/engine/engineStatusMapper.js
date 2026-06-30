@@ -95,11 +95,6 @@ export function mapEngineUiStatus(engine) {
   return mapApiEngineStatusToUi(engine.status)
 }
 
-/** @deprecated gunakan mapEngineUiStatus */
-export function mapWorkerUiStatus(engine) {
-  return mapEngineUiStatus(engine)
-}
-
 function resolveWorkerCapacity(engine) {
   const rawWorkers = pickFirstDefined(
     engine.workers,
@@ -172,20 +167,7 @@ export function mapEngineToColumn(engine) {
   }
 }
 
-export function mapEngineToWorker(engine) {
-  const column = mapEngineToColumn(engine)
 
-  return {
-    id: column.id,
-    name: column.name,
-    status: column.uiStatus,
-    activeCount: column.activeCount,
-    workerCount: column.workerCount,
-    available: column.available,
-    workers: column.workers,
-    currentDocument: null,
-  }
-}
 
 function flattenEngineWorkers(engines) {
   return engines.flatMap((engine) => engine.workers ?? [])

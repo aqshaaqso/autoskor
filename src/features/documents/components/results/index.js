@@ -1,5 +1,5 @@
 export { ResultsTable } from './ResultsTable'
 export { ScoreSummary } from './ScoreSummary'
 export { ExtractedIndicatorsPanel } from './ExtractedIndicatorsPanel'
-export { TidakDapatDihitungPanel } from './NonProcessAble'
+export { TidakDapatDihitungPanel } from './TidakDapatDihitungPanel'
 export { StatusBadge } from './StatusBadge'

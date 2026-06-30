@@ -1,0 +1,146 @@
+{
+  "id": "09f2d987-2ba4-4025-921b-8bda40401ccb",
+  "uploaded_file_id": "db2b329c-c066-4d5a-b291-266a8ec21d73",
+  "usecase_id": "16f3353f-59a3-4af2-8dc2-5ac1df152668",
+  "status": "completed_success",
+  "progress_percent": 100,
+  "document_route": "unknown",
+  "engine_job_id": "09f2d987-2ba4-4025-921b-8bda40401ccb",
+  "uploaded_at": "2026-06-29T11:59:41.227774Z",
+  "waiting_at": "2026-06-29T11:59:41.227774Z",
+  "finished_at": "2026-06-29T12:00:03.941769Z",
+  "engine_processing_seconds": 23,
+  "created_at": "2026-06-29T11:59:41.227774Z",
+  "updated_at": "2026-06-29T12:00:03.94018Z",
+  "file": {
+    "id": "db2b329c-c066-4d5a-b291-266a8ec21d73",
+    "original_filename": "laporan-rat-2020-Final (2).pdf",
+    "mime_type": "application/pdf",
+    "file_size_bytes": 11256396,
+    "file_path": "storage/uploads/72e1da5f-3923-4c81-bbea-564d2d49b369.pdf",
+    "file_sha256": "",
+    "uploaded_at": "2026-06-29T11:59:41.227774Z"
+  },
+  "result": {
+    "id": "3b56375f-9d17-430c-9b9c-9c2d56576026",
+    "usecase_id": "61001d2f-7a94-427c-ae37-1e82f98a99a8",
+    "scoring_job_id": "09f2d987-2ba4-4025-921b-8bda40401ccb",
+    "result_data": {
+      "status": "calculated",
+      "total_skor": 21,
+      "scoring_job_id": "09f2d987-2ba4-4025-921b-8bda40401ccb",
+      "raw_extractions": {
+        "result": {
+          "raw_output": "**Feedback \u0026 Recommendations on the “Audit \u0026 Monitoring Report – Koperasi Simpan Pinjam Sejahtera Bersama” (2020‑2021)**  \n\n---\n\n## 1. Executive Summary  \n\nThe report provides a comprehensive review of the audit function, risk‑monitoring mechanisms, governance structures, and operational programmes of **Koperasi Simpan Pinjam Sejahtera Bersama (KSP‑SB)**. It covers:\n\n* Financial performance (loss before tax, cash‑flow statements)  \n* Risk‑management frameworks (liquidity \u0026 credit risks)  \n* Monitoring of loan products, savings accounts, and digital financial services  \n* Human‑resource oversight (competence, remuneration, performance appraisal)  \n* Synergy with the Board and external auditors  \n* Pandemic impact and mitigation measures  \n\nOverall, the document demonstrates a **good effort to institutionalise monitoring**, but several gaps and ambiguities limit its effectiveness in safeguarding the cooperative’s financial health and long‑term sustainability.\n\n---\n\n## 2. Strengths  \n\n| Area | What Works Well |\n|------|-----------------|\n| **Scope of Coverage** | Includes all critical domains – liquidity, credit, governance, HR, asset management, digital services, and board coordination. |\n| **Data‑Driven Analysis** | Financial tables (e.g., total assets, cash‑flow, loss before tax) give concrete evidence for decision‑making. |\n| **Risk Emphasis** | Explicit discussion of liquidity \u0026 credit risks, plus a dedicated “Monitoring Cost of Fund” section, shows awareness of key risk factors. |\n| **Governance Structure** | Clear listing of the Board, Management, Internal Audit, and External Auditors; the role of the Auditor General is mentioned. |\n| **Pandemic Impact Acknowledged** | The report recognises the severe contraction caused by COVID‑19 and calls for swift recovery. |\n| **Action‑Oriented Language** | Recommendations are phrased as “we propose”, indicating a proactive stance. |\n\n---\n\n## 3. Weaknesses \u0026 Gaps  \n\n| Issue | Why It Matters | Suggested Remedy |\n|-------|----------------|------------------|\n| **Lack of Defined BMPP (Batas Maksimal Pemberian Pinjaman)** | Without clear thresholds, the cooperative cannot gauge how much additional credit it may safely extend. | Publish a quantitative BMPP (e.g., maximum loan‑to‑value ratio, exposure limits per member/segment) and tie it to liquidity ratios (LCR, NSFR). |\n| **Vague “Monitoring Cost of Fund”** | The term is not elaborated; stakeholders cannot assess the efficiency of fund utilisation. | Break down monitoring costs (e.g., manpower, technology, third‑party services) and express them as a % of total assets or loan book. |\n| **Insufficient Detail on Credit Risk Monitoring** | No explicit metrics (e.g., delinquency rate, provision coverage) are provided. | Introduce key performance indicators (KPIs) for credit quality and outline a periodic review cycle. |\n| **IT‑Based Audit Development Not Fully Described** | The promise of “audit berbasis IT” is vague; no tools, platforms, or KPIs for the new audit approach are given. | Detail the proposed IT solutions (e.g., data analytics, RPA, continuous monitoring) and expected outcomes (e.g., reduction in manual effort by X%). |\n| **Human‑Resource Monitoring Limited** | Competence, remuneration, and performance appraisal are mentioned but no concrete mechanisms are outlined. | Create a competency framework, tie remuneration to measurable outcomes, and institute a formal performance‑review cycle. |\n| **Synergy with External Auditors Not Fully Leveraged** | No specific joint‑action plans or information‑sharing protocols are described. | Draft a memorandum of understanding (MoU) that defines data exchange, audit coordination, and escalation procedures. |\n| **Financial Reporting Ambiguities** | Some line items (e.g., “Sisa Hasil Usaha”) lack context; the relationship between revenue and expense items is not clear. | Provide a glossary of terms and a simplified statement of profit \u0026 loss with explanatory notes. |\n| **No Contingency / Business‑Continuity Plan for Future Crises** | The pandemic response is reactive; no proactive measures are outlined. | Develop a crisis‑management playbook (e.g., digital service continuity, emergency liquidity facilities). |\n| **Missing KPIs for Digital Financial Services (DFS)** | The cooperative’s DFS products are highlighted but no performance metrics (adoption rate, transaction volume, churn) are presented. | Define measurable targets (e.g., 20 % increase in DFS users YoY, \u003c1 % failure rate). |\n\n---\n\n## 4. Actionable Recommendations  \n\n### A. Strengthen Risk‑Management Framework  \n1. **Finalize and Publish a BMPP** – Set quantitative limits for loan size, concentration risk, and exposure per member/segment.  \n2. **Introduce Credit‑Risk KPIs** – Delinquency ratio, non‑performing loan (NPL) ratio, provision coverage ≥ 100 %.  \n3. **Adopt IT‑Enabled Continuous Monitoring** – Deploy data‑analytics dashboards for real‑time liquidity, cash‑flow, and risk exposure tracking.  \n\n### B. Enhance Audit \u0026 Monitoring Capabilities  \n1. **Develop a Detailed IT‑Audit Roadmap** – Include technology stack, pilot projects, expected cost‑savings, and timeline (e.g., 6‑month rollout).  \n2. **Formalize Synergy with External Auditors** – Draft MoU, joint‑review calendar, and shared reporting templates.  \n3. **Create a Digital Financial Services Governance Model** – Set KPIs for DFS adoption, security, and customer satisfaction.  \n\n### C. Optimize Human‑Resource Management  \n1. **Implement Competency Framework** – Define required skills for loan officers, auditors, and support staff; link to career ladders and training budgets.  \n2. **Link Remuneration to Performance Metrics** – Tie bonuses/ incentives to loan‑book quality, audit outcomes, and member satisfaction scores.  \n3. **Establish Formal Performance‑Appraisal Cycle** – Quarterly reviews with clear, measurable targets.  \n\n### D. Improve Financial Transparency \u0026 Reporting  \n1. **Standardise Terminology \u0026 Provide Definitions** – Clarify terms like “BMPP”, “Monitoring Cost of Fund”, and “Sisa Hasil Usaha”.  \n2. **Publish a Simplified Statement of Profit \u0026 Loss** – Include narrative explanations alongside the numbers.  \n3. **Add a “Risk Appetite Statement”** – Outline acceptable levels of liquidity, credit, and operational risk for the cooperative.  \n\n### E. Build Resilience to Future Disruptions  \n1. **Draft a Pandemic/Health‑Crisis Playbook** – Define digital service backup, remote processing protocols, and communication plan with members.  \n2. **Create an Early‑Warning Indicator System** – Use predictive analytics to flag emerging risks (e.g., rising delinquency trends).  \n\n### F. Governance \u0026 Board Engagement  \n1. **Quarterly Audit Review Sessions** – Ensure the Board receives concise, data‑rich updates and can approve corrective actions promptly.  \n2. **External Advisory Panel** – Invite sector experts to advise on best practices for cooperative banking, digital transformation, and risk management.  \n\n---\n\n## 5. Closing Remarks  \n\nThe report lays a solid foundation for a more robust monitoring and audit function at KSP‑SB, but several **critical gaps** must be addressed to protect the cooperative’s assets, maintain member confidence, and ensure compliance with regulatory expectations. By implementing the recommendations above—particularly the definition of clear credit limits, the adoption of IT‑based audit tools, and the establishment of a comprehensive risk‑management framework—the cooperative can move from a **reactive posture** to a **proactive, resilient stance**.\n\nA focused, phased implementation (e.g., short‑term wins in risk monitoring and governance, followed by longer‑term digital transformation) will deliver measurable improvements within 6–12 months, positioning KSP‑SB for sustainable growth even in the face of future shocks.\n\n---  \n\n**Prepared by:** *[Your Name / Consulting Team]*  \n**Date:** 24 September 2025  \n\n*(Feel free to let me know if you need a deeper dive into any specific section or a template for the BMPP, KPI dashboard, or crisis‑management plan.)*"
+        },
+        "model_name": "lfm2.5:latest"
+      },
+      "detail_indikator": {
+        "jatidiri_pea": {
+          "skor": 0,
+          "bobot": 0.03,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "likuiditas_kas": {
+          "skor": 0,
+          "bobot": 0.1,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "permodalan_aset": {
+          "skor": 0,
+          "bobot": 0.06,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "efisiensi_operasi": {
+          "skor": 0,
+          "bobot": 0.04,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "jatidiri_koperasi": {
+          "skor": 0,
+          "bobot": 0.07,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "rentabilitas_aset": {
+          "skor": 0,
+          "bobot": 0.03,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "rentabilitas_modal": {
+          "skor": 0,
+          "bobot": 0.03,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "efisiensi_pelayanan": {
+          "skor": 0,
+          "bobot": 0.02,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "permodalan_kecukupan": {
+          "skor": 0,
+          "bobot": 0.03,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "efisiensi_beban_usaha": {
+          "skor": 0,
+          "bobot": 0.04,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "kemandirian_operasional": {
+          "skor": 0,
+          "bobot": 0.04,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "kualitas_volume_anggota": {
+          "skor": 0,
+          "bobot": 0.1,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "kualitas_cadangan_risiko": {
+          "skor": 5,
+          "bobot": 0.05,
+          "nilai": 100,
+          "rasio": 100
+        },
+        "likuiditas_pinjaman_dana": {
+          "skor": 0,
+          "bobot": 0.05,
+          "nilai": 0,
+          "rasio": 0
+        },
+        "kualitas_pinjaman_berisiko": {
+          "skor": 5,
+          "bobot": 0.05,
+          "nilai": 100,
+          "rasio": 100
+        },
+        "kualitas_risiko_bermasalah": {
+          "skor": 5,
+          "bobot": 0.05,
+          "nilai": 100,
+          "rasio": 100
+        },
+        "permodalan_pinjaman_berisiko": {
+          "skor": 6,
+          "bobot": 0.06,
+          "nilai": 100,
+          "rasio": 100
+        }
+      }
+    },
+    "created_at": "2026-06-29T12:00:03.937294Z",
+    "updated_at": "2026-06-29T12:00:03.937294Z"
+  }
+}

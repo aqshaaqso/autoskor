@@ -94,12 +94,13 @@ Buka `http://localhost:5173`. Default `.env.example` mengarah ke middleware loka
 Salin `.env.example` ke `.env`:
 
 ```env
-# Mode middleware nyata (default tim)
-VITE_API_BASE_URL=http://172.16.210.244:8000/api
+VITE_API_BASE_URL=http://localhost:8000/api
 VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
 VITE_SCORING_JOBS_LIST_LIMIT=100
 ```
+
+> Untuk server tim (LAN/VPN), ganti `VITE_API_BASE_URL` — lihat [PANDUAN_SETUP.md](./PANDUAN_SETUP.md#dua-mode-konfigurasi).
 
 Konfigurasi auth/admin mock vs middleware nyata: [PANDUAN_SETUP.md](./PANDUAN_SETUP.md#dua-mode-konfigurasi).
 
@@ -205,6 +206,7 @@ Alias `@/` → `src/` dikonfigurasi di `vite.config.js`.
 
 | File | Isi |
 |------|-----|
+| [**docs/panduan-manual/**](./docs/panduan-manual/README.md) | **Panduan lengkap edit manual** — halaman, fitur, API, state, UI, checklist |
 | [API_CONTRACT.md](./API_CONTRACT.md) | Kontrak middleware API + panduan developer |
 | [ARSITEKTUR.md](./ARSITEKTUR.md) | Diagram alur & tanggung jawab komponen |
 | [TECH_STACK.md](./TECH_STACK.md) | Penjelasan teknologi & alasan pemilihan |

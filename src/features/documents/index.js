@@ -2,7 +2,6 @@ export { QueuePage } from './pages/QueuePage'
 export { ProcessedPage } from './pages/ProcessedPage'
 export { ProcessedDetailPage } from './pages/ProcessedDetailPage'
 export { DocumentTable } from './components/DocumentTable'
-export { DocumentStatusBadge } from '@/shared/ui'
 export { DocumentWatcher } from './components/DocumentWatcher'
 export { useDocumentStore } from './store/useDocumentStore'
 export {

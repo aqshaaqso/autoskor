@@ -88,21 +88,7 @@ Script ini otomatis: cek Node.js → `npm install` → salin `.env` jika belum a
 
 > **Catatan:** Upload, antrian, dan hasil **selalu** membutuhkan middleware nyata. Yang bisa dimock hanya auth (`VITE_USE_MOCK_AUTH`) dan admin (`VITE_USE_MOCK_ADMIN`).
 
-### Mode A — Middleware nyata (default tim)
-
-Dipakai jika laptop bisa akses server middleware (VPN / LAN kantor). Ini konfigurasi aktif di `.env.example`.
-
-```env
-VITE_API_BASE_URL=http://172.16.210.244:8000/api
-VITE_USE_MOCK_AUTH=true
-VITE_USE_MOCK_ADMIN=true
-```
-
-> Upload & antrian **selalu** membutuhkan akses ke middleware di `VITE_API_BASE_URL`. Kalau laptop tidak bisa ping ke server → upload & antrian akan gagal / loading terus.
-
-### Mode B — Auth/admin mock, middleware lokal
-
-Hanya auth & admin yang dimock. Dokumen tetap membutuhkan middleware di URL yang dikonfigurasi.
+### Mode A — Development lokal (default `.env.example`)
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
@@ -110,11 +96,27 @@ VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
 ```
 
+Jalankan middleware di laptop/server lokal pada port 8000, atau sesuaikan host/port.
+
+### Mode B — Middleware tim (LAN / VPN)
+
+Dipakai jika laptop bisa akses server middleware kantor:
+
+```env
+VITE_API_BASE_URL=http://172.16.210.244:8000/api
+VITE_USE_MOCK_AUTH=true
+VITE_USE_MOCK_ADMIN=true
+```
+
+> Upload & antrian **selalu** membutuhkan akses ke middleware di `VITE_API_BASE_URL`. Kalau laptop tidak bisa menjangkau server → upload & antrian gagal / loading terus.
+
 Setelah ubah `.env`, **wajib restart** dev server (`Ctrl+C` lalu `npm run dev` lagi).
 
 ---
 
 ## Troubleshooting
+
+> Untuk masalah saat mengedit kode (routing, API, state, build), lihat [docs/panduan-manual/13-troubleshooting.md](./docs/panduan-manual/13-troubleshooting.md).
 
 ### `node` / `npm` tidak dikenali
 

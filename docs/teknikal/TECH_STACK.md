@@ -156,7 +156,6 @@ Layout sidebar + konten, tabel, toast, color grading (Hijau/Kuning/Merah). Tema 
 | UI library (MUI, dll.) | Tailwind + komponen custom |
 | Next.js | Pure client SPA |
 | React Query | Polling tunggal via `DocumentWatcher` (5 detik) |
-| Vitest | Unit test mapper & utils |
 | WebSocket | Polling HTTP cukup |
 
 ---

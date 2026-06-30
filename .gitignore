@@ -8,7 +8,8 @@ dist-ssr
 logs
 *.log
 .DS_Store
-.txt
+agent-tools/
+.vscode/
 test-output.pdf
 scripts/downloaded-*.pdf
 terminals/

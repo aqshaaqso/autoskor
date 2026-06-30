@@ -3,87 +3,87 @@
     {
       "key": "skor_modal",
       "aspek": "Permodalan",
-      "komponen": "Rasio Modal Sendiri terhadap Total Asset"
+      "komponen": "Permodalan Aset"
     },
     {
       "key": "skor_kecukupan_modal",
       "aspek": "Permodalan",
-      "komponen": "Rasio Kecukupan Modal Sendiri"
+      "komponen": "Permodalan Kecukupan"
     },
     {
       "key": "skor_pinjaman_berisiko",
       "aspek": "Permodalan",
-      "komponen": "Rasio Pinjaman Berisiko"
+      "komponen": "Kualitas Pinjaman Berisiko"
     },
     {
       "key": "skor_modal_pinjaman_berisiko",
       "aspek": "Permodalan",
-      "komponen": "Rasio Modal Sendiri terhadap Pinjaman Berisiko"
+      "komponen": "Permodalan Pinjaman Berisiko"
     },
     {
       "key": "skor_rentabilitas_modal",
       "aspek": "Permodalan",
-      "komponen": "Rasio Rentabilitas Modal"
+      "komponen": "Rentabilitas Modal"
     },
     {
       "key": "skor_kas",
       "aspek": "Likuiditas",
-      "komponen": "Rasio Kas terhadap Kewajiban Jangka Pendek"
+      "komponen": "Likuiditas Kas"
     },
     {
       "key": "skor_pinjaman",
       "aspek": "Kualitas Aktiva Produktif",
-      "komponen": "Rasio Pinjaman Diberikan"
+      "komponen": "Likuiditas Pinjaman Dana"
     },
     {
       "key": "skor_volume_pinjaman_anggota",
       "aspek": "Kualitas Aktiva Produktif",
-      "komponen": "Rasio Volume Pinjaman pada Anggota"
+      "komponen": "Kualitas Volume Anggota"
     },
     {
       "key": "skor_cadangan_risiko",
       "aspek": "Kualitas Aktiva Produktif",
-      "komponen": "Rasio Cadangan Risiko"
+      "komponen": "Kualitas Cadangan Risiko"
     },
     {
       "key": "skor_risiko_pinjaman_bermasalah",
       "aspek": "Kualitas Aktiva Produktif",
-      "komponen": "Rasio Aktiva Produktif Bermasalah"
+      "komponen": "Kualitas Risiko Bermasalah"
     },
     {
       "key": "skor_efisiensi_operasi",
       "aspek": "Efisiensi",
-      "komponen": "Rasio Efisiensi Operasional"
+      "komponen": "Efisiensi Operasi"
     },
     {
       "key": "skor_partisipasi_bruto",
       "aspek": "Efisiensi",
-      "komponen": "Rasio Partisipasi Bruto"
+      "komponen": "Jatidiri Koperasi"
     },
     {
       "key": "skor_rentabilitas_aset",
       "aspek": "Efisiensi",
-      "komponen": "Rasio Rentabilitas Aktiva"
+      "komponen": "Rentabilitas Aset"
     },
     {
       "key": "skor_efisiensi_pelayanan",
       "aspek": "Efisiensi",
-      "komponen": "Rasio Efisiensi Pelayanan"
+      "komponen": "Efisiensi Pelayanan"
     },
     {
       "key": "skor_efisiensi_beban_usaha",
       "aspek": "Efisiensi",
-      "komponen": "Rasio Efisiensi Beban Usaha"
+      "komponen": "Efisiensi Beban Usaha"
     },
     {
       "key": "skor_kemandirian_operasional",
       "aspek": "Kemandirian dan Pertumbuhan",
-      "komponen": "Rasio Kemandirian Operasional"
+      "komponen": "Kemandirian Operasional"
     },
     {
       "key": "skor_promosi_ekonomi_anggota",
       "aspek": "Kemandirian dan Pertumbuhan",
-      "komponen": "Rasio Promosi Ekonomi Anggota"
+      "komponen": "Jatidiri PEA"
     }
   ]
 }

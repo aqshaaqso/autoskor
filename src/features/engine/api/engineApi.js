@@ -4,7 +4,7 @@ import {
   mergeEngineStatus,
 } from '@/shared/api/engine/engineStatusMapper'
 import { fetchAllScoringJobDocuments } from '@/shared/api/scoringJobs/scoringJobsApi'
-import { mapDocumentsToEngineStatus } from './engineStatusMapper'
+import { mapDocumentsToEngineStatus } from './mapDocumentsToEngineStatus'
 
 export async function getEngineStatus() {
   const [documentsResult, apiResult] = await Promise.allSettled([

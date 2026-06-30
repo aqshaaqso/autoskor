@@ -2,9 +2,12 @@
 
 ```
 autoskor/
+├── docs/
+│   └── panduan-manual/               # Panduan edit manual (developer)
 ├── public/                           # Asset statis (vite.svg)
 ├── scripts/
 │   └── test-middleware.ps1           # Uji endpoint middleware
+├── setup.bat                         # Setup cepat (Windows)
 ├── src/
 │   ├── app/
 │   │   ├── App.js                    # Definisi routing
@@ -45,9 +48,9 @@ autoskor/
 │   │   │   ├── constants.js
 │   │   │   └── index.js
 │   │   ├── engine/
-│   │   │   ├── api/                  # engineApi.js, engineStatusMapper.js
+│   │   │   ├── api/                  # engineApi.js, mapDocumentsToEngineStatus.js
 │   │   │   ├── components/           # ClusterStatusPanel, EngineStatsGrid, WorkerSection, ...
-│   │   │   ├── hooks/
+│   │   │   ├── hooks/useEngineStatus.js
 │   │   │   ├── pages/EngineDashboardPage.js
 │   │   │   ├── utils/                # clusterStatus.js, workerStatus.js (facade → shared)
 │   │   │   └── index.js
@@ -63,8 +66,10 @@ autoskor/
 │   │   │   ├── config.js             # Flag mock auth/admin dari .env
 │   │   │   ├── middlewareContract.js # Mapping status middleware ↔ UI
 │   │   │   ├── scoringJobs/          # scoringJobsApi, scoringJobsMapper, constants
+│   │   │   ├── engine/               # engineStatusApi, engineStatusMapper
 │   │   │   └── mock/                 # authMock, adminMock, activityMock
 │   │   ├── constants/                # aspek, indikator, fileTypes, upload, pagination
+│   │   │   └── indikatorDetailPenilaian.json
 │   │   ├── layout/                   # MainLayout, Sidebar, UserMenu
 │   │   ├── ui/                       # Toast, PageLoader, DocumentStatusBadge, ...
 │   │   ├── store/                    # useUiStore
@@ -163,8 +168,10 @@ File test berdampingan dengan modul yang diuji:
 
 ```
 src/shared/utils/resultDetail.test.js
+src/shared/utils/format.test.js
 src/shared/utils/extractedIndicators.test.js
 src/shared/api/scoringJobs/scoringJobsMapper.test.js
+src/shared/api/engine/engineStatusMapper.test.js
 ```
 
 Jalankan: `npm test`
@@ -186,7 +193,9 @@ Dikonfigurasi di `vite.config.js` dan `jsconfig.json`.
 
 ## Dokumen Terkait
 
+- [docs/panduan-manual/README.md](./docs/panduan-manual/README.md) — Panduan lengkap edit manual
 - [README.md](./README.md) — Instalasi & ringkasan
+- [PANDUAN_SETUP.md](./PANDUAN_SETUP.md) — Setup laptop baru
 - [API_CONTRACT.md](./API_CONTRACT.md) — Kontrak middleware & panduan API
 - [ARSITEKTUR.md](./ARSITEKTUR.md) — Alur kerja & diagram
 - [TECH_STACK.md](./TECH_STACK.md) — Penjelasan teknologi

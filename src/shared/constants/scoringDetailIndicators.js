@@ -1,6 +1,7 @@
-import tambahan from '../../../tambahan.json'
+import indikatorDetailPenilaian from './indikatorDetailPenilaian.json'
 
-export const SCORING_DETAIL_INDICATORS = tambahan.indikator_detail_penilaian
+export const SCORING_DETAIL_INDICATORS =
+  indikatorDetailPenilaian.indikator_detail_penilaian
 
 export const SCORING_DETAIL_INDICATOR_META = Object.fromEntries(
   SCORING_DETAIL_INDICATORS.map(({ key, aspek, komponen }) => [

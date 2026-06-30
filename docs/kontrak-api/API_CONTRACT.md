@@ -49,11 +49,13 @@ Endpoint `engine-callback/*` dipanggil oleh **engine**, bukan browser.
 ### Environment variable frontend
 
 ```env
-VITE_API_BASE_URL=http://172.16.210.244:8000/api
+VITE_API_BASE_URL=http://localhost:8000/api
 VITE_USE_MOCK_AUTH=true
 VITE_USE_MOCK_ADMIN=true
 VITE_SCORING_JOBS_LIST_LIMIT=100
 ```
+
+> Server tim: ganti `VITE_API_BASE_URL` ke host yang dapat diakses (mis. `http://172.16.210.244:8000/api`).
 
 | Variable | Default | Deskripsi |
 |----------|---------|-----------|
@@ -370,6 +372,8 @@ shared/api/scoringJobs/
 shared/api/engine/
   engineStatusApi.js              → GET /engine/status
   engineStatusMapper.js           → Response → worker UI + merge scoring jobs
+features/engine/api/
+  mapDocumentsToEngineStatus.js   → Fallback agregat dari scoring jobs
 shared/utils/documentStatusLabels.js → Label Indonesia dokumen
 shared/utils/engineStatusLabels.js   → Label Indonesia engine
 features/documents/api/documentsApi.js  → Wrapper scoring jobs

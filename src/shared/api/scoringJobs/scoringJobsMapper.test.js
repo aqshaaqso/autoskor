@@ -50,7 +50,7 @@ describe('mapScoringJobToDocument', () => {
 })
 
 describe('mapResultDataToUiResults', () => {
-  it('menampilkan 17 baris indikator sesuai tambahan.json', () => {
+  it('menampilkan 17 baris indikator sesuai indikatorDetailPenilaian.json', () => {
     const results = mapResultDataToUiResults({
       total_skor: 10,
       detail_indikator: {
