@@ -2,11 +2,11 @@ import { createElement as h } from "react";
 import { formatDateTime } from "@/shared/utils/format";
 
 export function ClusterStatusPanel({ engineStatus }) {
-  //const engineCount =
-  //engineStatus.engineTotals?.total ?? engineStatus.engines?.length ?? 0;
-  //const activeWorkerCount =
-  //engineStatus.activeWorkerCount ?? engineStatus.workerCount ?? 0;
-  //const workerCount = engineStatus.workerCount ?? activeWorkerCount;
+  const engineCount =
+    engineStatus.engineTotals?.total ?? engineStatus.engines?.length ?? 0;
+  const activeWorkerCount =
+    engineStatus.activeWorkerCount ?? engineStatus.workerCount ?? 0;
+  const workerCount = engineStatus.workerCount ?? activeWorkerCount;
 
   // Helper untuk format waktu proses
   const formatProcessingTime = (ms) => {
