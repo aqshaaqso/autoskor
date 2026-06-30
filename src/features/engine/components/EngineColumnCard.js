@@ -96,11 +96,6 @@ export function EngineColumnCard({ engine }) {
           getClusterStatusLabel(engine.uiStatus),
         ),
       ),
-      h(
-        "p",
-        { className: `mt-3 text-sm font-semibold ${styles.accent}` },
-        `${activeWorkerCount} dari ${engine.workerCount ?? workers.length} worker aktif`,
-      ),
     ),
     workers.length > 0
       ? h(
