@@ -1,34 +1,33 @@
-import { createElement as h, useState } from 'react'
-import { ChevronDown, Server } from 'lucide-react'
-import { EngineWorkersGrid } from './EngineWorkersGrid'
+import { createElement as h, useState } from "react";
+import { ChevronDown, Server } from "lucide-react";
+import { EngineWorkersGrid } from "./EngineWorkersGrid";
 
 function resolveEngineColumns(engines = [], workers = []) {
-  if (engines.length > 0) return engines
+  if (engines.length > 0) return engines;
 
-  if (!workers.length) return []
+  if (!workers.length) return [];
 
   return [
     {
-      id: 'antrian',
-      name: 'Dari antrian dokumen',
+      id: "antrian",
+      name: "Dari antrian dokumen",
       uiStatus: workers.some(
-        (worker) =>
-          worker.status === 'working' || worker.status === 'running',
+        (worker) => worker.status === "working" || worker.status === "running",
       )
-        ? 'working'
-        : 'idle',
+        ? "working"
+        : "idle",
       workerClusterStatus: null,
       activeCount: workers.length,
       workers,
     },
-  ]
+  ];
 }
 
 function countActiveWorkers(engines) {
   return engines.reduce(
     (total, engine) => total + (engine.activeCount ?? 0),
     0,
-  )
+  );
 }
 
 function countTotalWorkers(engines) {
@@ -36,7 +35,7 @@ function countTotalWorkers(engines) {
     (total, engine) =>
       total + (engine.workerCount ?? engine.workers?.length ?? 0),
     0,
-  )
+  );
 }
 
 export function WorkerSection({
@@ -44,50 +43,45 @@ export function WorkerSection({
   workers = [],
   healthStatus = null,
 }) {
-  const [isOpen, setIsOpen] = useState(true)
-  const columns = resolveEngineColumns(engines, workers)
-  const activeWorkers = countActiveWorkers(columns)
-  const totalWorkers = countTotalWorkers(columns)
+  const [isOpen, setIsOpen] = useState(true);
+  const columns = resolveEngineColumns(engines, workers);
+  const activeWorkers = countActiveWorkers(columns);
+  const totalWorkers = countTotalWorkers(columns);
 
   return h(
-    'div',
+    "div",
     {
       className:
-        'overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm',
+        "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm",
     },
     h(
-      'button',
+      "button",
       {
-        type: 'button',
+        type: "button",
         onClick: () => setIsOpen((open) => !open),
         className:
-          'flex w-full items-center justify-between gap-3 px-6 py-4 text-left transition-colors hover:bg-slate-50',
-        'aria-expanded': isOpen,
+          "flex w-full items-center justify-between gap-3 px-6 py-4 text-left transition-colors hover:bg-slate-50",
+        "aria-expanded": isOpen,
       },
       h(
-        'div',
-        { className: 'flex items-center gap-2' },
-        h(Server, { className: 'h-5 w-5 text-slate-600' }),
+        "div",
+        { className: "flex items-center gap-2" },
+        h(Server, { className: "h-5 w-5 text-slate-600" }),
         h(
-          'h2',
-          { className: 'text-lg font-semibold text-slate-900' },
-          'Engine & Worker',
-        ),
-        h(
-          'span',
-          { className: 'text-sm text-slate-500' },
-          `(${columns.length} engine · ${activeWorkers} dari ${totalWorkers} worker aktif)`,
+          "h2",
+          { className: "text-lg font-semibold text-slate-900" },
+          "Engine & Worker",
         ),
       ),
       h(ChevronDown, {
-        className: `h-5 w-5 shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`,
+        className: `h-5 w-5 shrink-0 text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`,
       }),
     ),
     isOpen &&
       h(
-        'div',
-        { className: 'border-t border-slate-200 p-6' },
+        "div",
+        { className: "border-t border-slate-200 p-6" },
         h(EngineWorkersGrid, { engines: columns, healthStatus }),
       ),
-  )
+  );
 }
