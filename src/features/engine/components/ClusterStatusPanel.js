@@ -6,7 +6,7 @@ export function ClusterStatusPanel({ engineStatus }) {
     engineStatus.engineTotals?.total ?? engineStatus.engines?.length ?? 0;
   const activeWorkerCount =
     engineStatus.activeWorkerCount ?? engineStatus.workerCount ?? 0;
-  const workerCount = engineStatus.workerCount ?? activeWorkerCount;
+  //const workerCount = engineStatus.workerCount ?? activeWorkerCount;
 
   // Helper untuk format waktu proses
   const formatProcessingTime = (ms) => {
