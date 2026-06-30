@@ -51,12 +51,13 @@ export function ClusterStatusPanel({ engineStatus }) {
             { className: "font-semibold text-slate-900" },
             `${engineCount}`,
           ),
-          " engine, ",
+          " Engine, ",
           h(
             "span",
             { className: "font-semibold text-slate-900" },
-            `${activeWorkerCount}`,
+            `${workerCount}`,
           ),
+          " Worker ",
         ),
       ),
       h(
