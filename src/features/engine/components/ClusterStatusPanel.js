@@ -2,6 +2,22 @@ import { createElement as h } from "react";
 import { formatDateTime } from "@/shared/utils/format";
 
 export function ClusterStatusPanel({ engineStatus }) {
+  // Helper untuk format waktu proses
+  const formatProcessingTime = (ms) => {
+    if (!ms) return "0 detik";
+
+    const minutes = ms / 60000;
+
+    if (minutes < 1) {
+      const seconds = Math.round(ms / 1000);
+      return `${seconds} detik`;
+    } else if (minutes < 60) {
+      return `${minutes.toFixed(1)} menit`;
+    } else {
+      return `${Math.round(minutes)} menit`;
+    }
+  };
+
   return h(
     "div",
     {
@@ -52,7 +68,7 @@ export function ClusterStatusPanel({ engineStatus }) {
           h(
             "span",
             { className: "font-medium text-slate-700" },
-            `${Math.round(engineStatus.averageProcessingMs / 1000)} detik / dokumen`,
+            `${formatProcessingTime(engineStatus.averageProcessingMs)} / dokumen`,
           ),
         ),
       ),
