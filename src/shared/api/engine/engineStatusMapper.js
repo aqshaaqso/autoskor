@@ -1,4 +1,4 @@
-import { EXPECTED_ENGINE_COUNT, WORKERS_PER_ENGINE } from './constants'
+import { DEFAULT_ENGINE_COUNT, DEFAULT_WORKERS_PER_ENGINE } from './constants'
 
 function pickFirstDefined(...values) {
   return values.find((value) => value !== undefined && value !== null)
@@ -6,6 +6,35 @@ function pickFirstDefined(...values) {
 
 function pickPositiveCount(...values) {
   return values.find((value) => typeof value === 'number' && value > 0)
+}
+
+function resolveRawWorkerTotal(raw) {
+  return pickPositiveCount(
+    raw?.worker_total,
+    raw?.workerTotal,
+    raw?.total_workers,
+    raw?.totalWorkers,
+    raw?.worker_count,
+    raw?.workerCount,
+  )
+}
+
+function resolveFallbackWorkersPerEngine(raw, engineCount) {
+  const totalWorkers = resolveRawWorkerTotal(raw)
+  const activeWorkers = pickPositiveCount(
+    raw?.worker_active_total,
+    raw?.workerActiveTotal,
+  )
+  const knownWorkers = Math.max(totalWorkers ?? 0, activeWorkers ?? 0)
+
+  if (knownWorkers > 0 && engineCount > 0) {
+    return Math.max(
+      DEFAULT_WORKERS_PER_ENGINE,
+      Math.ceil(knownWorkers / engineCount),
+    )
+  }
+
+  return DEFAULT_WORKERS_PER_ENGINE
 }
 
 function synthesizeEnginesFromTotals(raw) {
@@ -16,10 +45,11 @@ function synthesizeEnginesFromTotals(raw) {
       raw?.workerOnlineEngines,
       raw?.total,
       raw?.available,
-    ) ?? (isHealthy ? EXPECTED_ENGINE_COUNT : 0)
+    ) ?? (isHealthy ? DEFAULT_ENGINE_COUNT : 0)
 
   if (engineCount <= 0) return []
 
+  const workersPerEngine = resolveFallbackWorkersPerEngine(raw, engineCount)
   const activeTotal = pickFirstDefined(
     raw?.worker_active_total,
     raw?.workerActiveTotal,
@@ -35,7 +65,8 @@ function synthesizeEnginesFromTotals(raw) {
     available: isHealthy,
     worker_status: {
       status: isHealthy ? 'online' : 'offline',
-      active_count: Math.min(WORKERS_PER_ENGINE, activePerEngine),
+      active_count: Math.min(workersPerEngine, activePerEngine),
+      total_count: workersPerEngine,
     },
   }))
 }
@@ -108,7 +139,10 @@ function resolveWorkerCapacity(engine) {
 
   return pickFirstDefined(
     engine.workerStatus?.totalCount,
-    WORKERS_PER_ENGINE,
+    engine.workerStatus?.activeCount > DEFAULT_WORKERS_PER_ENGINE
+      ? engine.workerStatus.activeCount
+      : undefined,
+    DEFAULT_WORKERS_PER_ENGINE,
   )
 }
 

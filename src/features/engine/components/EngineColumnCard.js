@@ -35,13 +35,11 @@ function getEngineCardStyles(status) {
 }
 
 function WorkerRow({ worker }) {
-  const jobName = worker.currentDocument?.fileName;
-
   return h(
     "div",
     {
       className:
-        "rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5",
+        "rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5",
     },
     h(
       "p",
@@ -96,7 +94,20 @@ export function EngineColumnCard({ engine }) {
         ),
       ),
     ),
-    h("div", { className: "mt-auto text-sm text-slate-800 font-semibold" }, `${workers.length} Worker`),);
+    workers.length > 0
+      ? h(
+          "div",
+          { className: "mt-auto space-y-2" },
+          workers.map((worker) =>
+            h(WorkerRow, { key: worker.id, worker }),
+          ),
+        )
+      : h(
+          "p",
+          { className: "mt-auto text-sm text-slate-500" },
+          "Worker belum tersedia",
+        ),
+  );
 }
 
 

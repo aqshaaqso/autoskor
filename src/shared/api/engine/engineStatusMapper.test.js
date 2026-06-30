@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { WORKERS_PER_ENGINE } from './constants'
+import { DEFAULT_WORKERS_PER_ENGINE } from './constants'
 import {
   expandEngineWorkers,
   mapApiEngineStatusToUi,
@@ -72,7 +72,7 @@ describe('mapEngineStatusResponse', () => {
     const mapped = mapEngineStatusResponse(liveEngineStatusSample)
 
     expect(mapped.healthStatus).toBe('healthy')
-    expect(mapped.workerCount).toBe(2)
+    expect(mapped.workerCount).toBe(4)
     expect(mapped.activeWorkerCount).toBe(2)
     expect(mapped.engines).toHaveLength(2)
     expect(mapped.engines[0]).toMatchObject({
@@ -80,14 +80,14 @@ describe('mapEngineStatusResponse', () => {
       name: 'engine-1',
       uiStatus: 'idle',
       activeCount: 1,
-      workerCount: WORKERS_PER_ENGINE,
+      workerCount: DEFAULT_WORKERS_PER_ENGINE,
     })
     expect(mapped.engines[1]).toMatchObject({
       id: 'engine-2',
       uiStatus: 'working',
     })
-    expect(mapped.engines[0].workers).toHaveLength(WORKERS_PER_ENGINE)
-    expect(mapped.workers).toHaveLength(2)
+    expect(mapped.engines[0].workers).toHaveLength(DEFAULT_WORKERS_PER_ENGINE)
+    expect(mapped.workers).toHaveLength(4)
     expect(mapped.source).toBe('engine-status')
   })
 
@@ -105,7 +105,26 @@ describe('mapEngineStatusResponse', () => {
 
     expect(mapped.engines).toHaveLength(2)
     expect(mapped.engines[0].uiStatus).toBe('idle')
-    expect(mapped.workers).toHaveLength(2)
+    expect(mapped.workers).toHaveLength(4)
+  })
+
+  it('mensintesis kapasitas worker dari total worker middleware', () => {
+    const mapped = mapEngineStatusResponse({
+      total: 3,
+      available: 3,
+      running: 3,
+      processing: 0,
+      worker_active_total: 6,
+      worker_online_engines: 3,
+      worker_total: 6,
+      status: 'healthy',
+      engines: null,
+    })
+
+    expect(mapped.engines).toHaveLength(3)
+    expect(mapped.engines[0].workers).toHaveLength(2)
+    expect(mapped.workers).toHaveLength(6)
+    expect(mapped.workerCount).toBe(6)
   })
 
   it('mengembalikan kosong saat engine down tanpa data', () => {
@@ -156,7 +175,7 @@ describe('mergeEngineStatus', () => {
     const merged = mergeEngineStatus(documentStatusSample, apiStatus)
 
     expect(merged.clusterStatus).toBe('waiting')
-    expect(merged.workerCount).toBe(2)
+    expect(merged.workerCount).toBe(4)
     expect(merged.engines).toHaveLength(2)
     expect(merged.engines[0].workers[0].currentDocument).toBeNull()
   })
@@ -180,14 +199,14 @@ describe('mergeEngineStatus', () => {
 })
 
 describe('expandEngineWorkers', () => {
-  it('menampilkan 1 worker per engine sesuai konfigurasi middleware', () => {
+  it('menampilkan fallback worker per engine sesuai konfigurasi middleware', () => {
     const workers = expandEngineWorkers({
       name: 'engine-1',
       status: 'running',
       workerStatus: { status: 'online', activeCount: 1 },
     })
 
-    expect(workers).toHaveLength(WORKERS_PER_ENGINE)
+    expect(workers).toHaveLength(DEFAULT_WORKERS_PER_ENGINE)
   })
 })
 
@@ -201,7 +220,7 @@ describe('mapEngineToColumn', () => {
     })
 
     expect(column.uiStatus).toBe('idle')
-    expect(column.workers).toHaveLength(WORKERS_PER_ENGINE)
+    expect(column.workers).toHaveLength(DEFAULT_WORKERS_PER_ENGINE)
   })
 
   it('membuat kolom engine dengan status sibuk saat middleware stop', () => {
