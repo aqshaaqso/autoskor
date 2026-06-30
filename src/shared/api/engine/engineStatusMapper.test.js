@@ -72,7 +72,7 @@ describe('mapEngineStatusResponse', () => {
     const mapped = mapEngineStatusResponse(liveEngineStatusSample)
 
     expect(mapped.healthStatus).toBe('healthy')
-    expect(mapped.workerCount).toBe(4)
+    expect(mapped.workerCount).toBe(2)
     expect(mapped.activeWorkerCount).toBe(2)
     expect(mapped.engines).toHaveLength(2)
     expect(mapped.engines[0]).toMatchObject({
@@ -87,11 +87,11 @@ describe('mapEngineStatusResponse', () => {
       uiStatus: 'working',
     })
     expect(mapped.engines[0].workers).toHaveLength(DEFAULT_WORKERS_PER_ENGINE)
-    expect(mapped.workers).toHaveLength(4)
+    expect(mapped.workers).toHaveLength(2)
     expect(mapped.source).toBe('engine-status')
   })
 
-  it('mensintesis engine saat response mengirim engines null', () => {
+  it('membuat kolom engine dari total API saat engines null', () => {
     const mapped = mapEngineStatusResponse({
       total: 2,
       available: 2,
@@ -105,7 +105,18 @@ describe('mapEngineStatusResponse', () => {
 
     expect(mapped.engines).toHaveLength(2)
     expect(mapped.engines[0].uiStatus).toBe('idle')
-    expect(mapped.workers).toHaveLength(4)
+    expect(mapped.workers).toHaveLength(2)
+  })
+
+  it('tidak mengarang jumlah engine saat API tidak mengirim engines atau total', () => {
+    const mapped = mapEngineStatusResponse({
+      status: 'healthy',
+      engines: null,
+    })
+
+    expect(mapped.engines).toHaveLength(0)
+    expect(mapped.workerCount).toBe(0)
+    expect(mapped.engineTotals.total).toBe(0)
   })
 
   it('mensintesis kapasitas worker dari total worker middleware', () => {
@@ -175,7 +186,7 @@ describe('mergeEngineStatus', () => {
     const merged = mergeEngineStatus(documentStatusSample, apiStatus)
 
     expect(merged.clusterStatus).toBe('waiting')
-    expect(merged.workerCount).toBe(4)
+    expect(merged.workerCount).toBe(2)
     expect(merged.engines).toHaveLength(2)
     expect(merged.engines[0].workers[0].currentDocument).toBeNull()
   })

@@ -35,11 +35,13 @@ function getEngineCardStyles(status) {
 }
 
 function WorkerRow({ worker }) {
+  const jobName = worker.currentDocument?.fileName;
+
   return h(
     "div",
     {
       className:
-        "rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5",
+        "rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5",
     },
     h(
       "p",
@@ -52,6 +54,7 @@ function WorkerRow({ worker }) {
 export function EngineColumnCard({ engine }) {
   const styles = getEngineCardStyles(engine.uiStatus);
   const workers = engine.workers ?? [];
+  const activeWorkerCount = engine.activeCount ?? 0;
 
   return h(
     "article",
@@ -93,21 +96,25 @@ export function EngineColumnCard({ engine }) {
           getClusterStatusLabel(engine.uiStatus),
         ),
       ),
+      h(
+        "p",
+        { className: `mt-3 text-sm font-semibold ${styles.accent}` },
+        `${activeWorkerCount} dari ${engine.workerCount ?? workers.length} worker aktif`,
+      ),
     ),
     workers.length > 0
       ? h(
           "div",
-          { className: "mt-auto space-y-2" },
-          workers.map((worker) =>
-            h(WorkerRow, { key: worker.id, worker }),
-          ),
+          { className: "space-y-2" },
+          workers.map((worker) => h(WorkerRow, { key: worker.id, worker })),
         )
       : h(
           "p",
-          { className: "mt-auto text-sm text-slate-500" },
-          "Worker belum tersedia",
+          {
+            className:
+              "rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500",
+          },
+          "Belum ada worker aktif.",
         ),
   );
 }
-
-

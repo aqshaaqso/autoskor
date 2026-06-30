@@ -85,7 +85,7 @@ Buka `http://localhost:5173`. Default `.env.example` mengarah ke middleware loka
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | `admin@koperasi.id` | `admin123` |
-| User | `operator@koperasi.id` | `user123` |
+| User | `user@koperasi.id` | `user123` |
 
 ---
 

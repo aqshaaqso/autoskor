@@ -1,11 +1,11 @@
-import { DEFAULT_ENGINE_COUNT, DEFAULT_WORKERS_PER_ENGINE } from './constants'
+import { DEFAULT_WORKERS_PER_ENGINE } from "./constants";
 
 function pickFirstDefined(...values) {
-  return values.find((value) => value !== undefined && value !== null)
+  return values.find((value) => value !== undefined && value !== null);
 }
 
 function pickPositiveCount(...values) {
-  return values.find((value) => typeof value === 'number' && value > 0)
+  return values.find((value) => typeof value === "number" && value > 0);
 }
 
 function resolveRawWorkerTotal(raw) {
@@ -16,80 +16,79 @@ function resolveRawWorkerTotal(raw) {
     raw?.totalWorkers,
     raw?.worker_count,
     raw?.workerCount,
-  )
+  );
 }
 
 function resolveFallbackWorkersPerEngine(raw, engineCount) {
-  const totalWorkers = resolveRawWorkerTotal(raw)
+  const totalWorkers = resolveRawWorkerTotal(raw);
   const activeWorkers = pickPositiveCount(
     raw?.worker_active_total,
     raw?.workerActiveTotal,
-  )
-  const knownWorkers = Math.max(totalWorkers ?? 0, activeWorkers ?? 0)
+  );
+  const knownWorkers = Math.max(totalWorkers ?? 0, activeWorkers ?? 0);
 
   if (knownWorkers > 0 && engineCount > 0) {
     return Math.max(
       DEFAULT_WORKERS_PER_ENGINE,
       Math.ceil(knownWorkers / engineCount),
-    )
+    );
   }
 
-  return DEFAULT_WORKERS_PER_ENGINE
+  return DEFAULT_WORKERS_PER_ENGINE;
 }
 
 function synthesizeEnginesFromTotals(raw) {
-  const isHealthy = String(raw?.status ?? '').toLowerCase() === 'healthy'
+  const isHealthy = String(raw?.status ?? "").toLowerCase() === "healthy";
   const engineCount =
     pickPositiveCount(
-      raw?.worker_online_engines,
-      raw?.workerOnlineEngines,
       raw?.total,
       raw?.available,
-    ) ?? (isHealthy ? DEFAULT_ENGINE_COUNT : 0)
+      raw?.worker_online_engines,
+      raw?.workerOnlineEngines,
+    ) ?? 0;
 
-  if (engineCount <= 0) return []
+  if (engineCount <= 0) return [];
 
-  const workersPerEngine = resolveFallbackWorkersPerEngine(raw, engineCount)
+  const workersPerEngine = resolveFallbackWorkersPerEngine(raw, engineCount);
   const activeTotal = pickFirstDefined(
     raw?.worker_active_total,
     raw?.workerActiveTotal,
     0,
-  )
-  const activePerEngine = activeTotal > 0
-    ? Math.ceil(activeTotal / engineCount)
-    : 0
+  );
+  const activePerEngine =
+    activeTotal > 0 ? Math.ceil(activeTotal / engineCount) : 0;
 
   return Array.from({ length: engineCount }, (_, index) => ({
     name: `engine-${index + 1}`,
-    status: isHealthy ? 'running' : 'stop',
+    status: isHealthy ? "running" : "stop",
     available: isHealthy,
     worker_status: {
-      status: isHealthy ? 'online' : 'offline',
+      status: isHealthy ? "online" : "offline",
       active_count: Math.min(workersPerEngine, activePerEngine),
       total_count: workersPerEngine,
     },
-  }))
+  }));
 }
 
 function resolveRawEngines(raw) {
   if (Array.isArray(raw?.engines) && raw.engines.length > 0) {
-    return raw.engines
+    return raw.engines;
   }
 
-  return synthesizeEnginesFromTotals(raw)
+  return synthesizeEnginesFromTotals(raw);
 }
 
 function normalizeEngineEntry(engine) {
-  if (!engine || typeof engine !== 'object') return null
+  if (!engine || typeof engine !== "object") return null;
 
-  const workerStatus = engine.worker_status ?? engine.workerStatus ?? {}
+  const workerStatus = engine.worker_status ?? engine.workerStatus ?? {};
 
   return {
-    name: engine.name ?? 'engine',
-    status: String(engine.status ?? '').toLowerCase(),
+    name: engine.name ?? "engine",
+    status: String(engine.status ?? "").toLowerCase(),
     available: Boolean(engine.available),
     workerStatus: {
-      status: String(workerStatus.status ?? '').toLowerCase(),
+      status: String(workerStatus.status ?? "").toLowerCase(),
       activeCount: pickFirstDefined(
         workerStatus.active_count,
         workerStatus.activeCount,
@@ -103,27 +102,27 @@ function normalizeEngineEntry(engine) {
       ),
     },
     workers: pickFirstDefined(engine.workers, workerStatus.workers),
-  }
+  };
 }
 
 /** Memetakan status middleware engine → kode UI. */
 export function mapApiEngineStatusToUi(apiStatus) {
-  switch (String(apiStatus ?? '').toLowerCase()) {
-    case 'processing':
-      return 'working'
-    case 'stop':
-    case 'stopped':
-      return 'busy'
-    case 'running':
-      return 'idle'
+  switch (String(apiStatus ?? "").toLowerCase()) {
+    case "processing":
+      return "working";
+    case "stop":
+    case "stopped":
+      return "busy";
+    case "running":
+      return "idle";
     default:
-      return 'idle'
+      return "idle";
   }
 }
 
 export function mapEngineUiStatus(engine) {
-  if (!engine) return 'idle'
-  return mapApiEngineStatusToUi(engine.status)
+  if (!engine) return "idle";
+  return mapApiEngineStatusToUi(engine.status);
 }
 
 function resolveWorkerCapacity(engine) {
@@ -131,10 +130,10 @@ function resolveWorkerCapacity(engine) {
     engine.workers,
     engine.worker_status?.workers,
     engine.workerStatus?.workers,
-  )
+  );
 
   if (Array.isArray(rawWorkers) && rawWorkers.length > 0) {
-    return rawWorkers.length
+    return rawWorkers.length;
   }
 
   return pickFirstDefined(
@@ -143,22 +142,28 @@ function resolveWorkerCapacity(engine) {
       ? engine.workerStatus.activeCount
       : undefined,
     DEFAULT_WORKERS_PER_ENGINE,
-  )
+  );
 }
 
 function normalizeWorkerEntry(worker, engineName, index) {
-  const slotIndex = pickFirstDefined(worker.slot_index, worker.slotIndex, index + 1)
-  const id = pickFirstDefined(worker.id, worker.worker_id, worker.workerId) ??
-    `${engineName}-worker-${slotIndex}`
-  const name = pickFirstDefined(worker.name, worker.worker_name, worker.workerName) ??
-    `Worker ${slotIndex}`
+  const slotIndex = pickFirstDefined(
+    worker.slot_index,
+    worker.slotIndex,
+    index + 1,
+  );
+  const id =
+    pickFirstDefined(worker.id, worker.worker_id, worker.workerId) ??
+    `${engineName}-worker-${slotIndex}`;
+  const name =
+    pickFirstDefined(worker.name, worker.worker_name, worker.workerName) ??
+    `Worker ${slotIndex}`;
 
   return {
     id,
     name,
     slotIndex,
     currentDocument: worker.current_document ?? worker.currentDocument ?? null,
-  }
+  };
 }
 
 export function expandEngineWorkers(engine) {
@@ -166,27 +171,28 @@ export function expandEngineWorkers(engine) {
     engine.workers,
     engine.worker_status?.workers,
     engine.workerStatus?.workers,
-  )
+  );
 
   if (Array.isArray(rawWorkers) && rawWorkers.length > 0) {
     return rawWorkers.map((worker, index) =>
       normalizeWorkerEntry(worker, engine.name, index),
-    )
+    );
   }
 
-  const workerCapacity = resolveWorkerCapacity(engine)
+  const workerCapacity = resolveWorkerCapacity(engine);
 
   return Array.from({ length: workerCapacity }, (_, index) => ({
     id: `${engine.name}-worker-${index + 1}`,
     name: `Worker ${index + 1}`,
     slotIndex: index + 1,
     currentDocument: null,
-  }))
+  }));
 }
 
 export function mapEngineToColumn(engine) {
-  const workers = expandEngineWorkers(engine)
-  const uiStatus = mapEngineUiStatus(engine)
+  const workers = expandEngineWorkers(engine);
+  const uiStatus = mapEngineUiStatus(engine);
+  const activeCount = engine.workerStatus.activeCount ?? 0;
 
   return {
     id: engine.name,
@@ -195,50 +201,55 @@ export function mapEngineToColumn(engine) {
     uiStatus,
     available: engine.available,
     workerClusterStatus: engine.workerStatus.status || null,
-    activeCount: engine.workerStatus.activeCount,
+    activeCount,
     workerCount: workers.length,
     workers,
-  }
+  };
 }
 
-
-
 function flattenEngineWorkers(engines) {
-  return engines.flatMap((engine) => engine.workers ?? [])
+  return engines.flatMap((engine) => engine.workers ?? []);
 }
 
 export function mapEngineStatusResponse(raw) {
   const engines = resolveRawEngines(raw)
     .map(normalizeEngineEntry)
-    .filter(Boolean)
+    .filter(Boolean);
 
-  const total = pickFirstDefined(raw?.total, engines.length, 0)
-  const available = pickFirstDefined(raw?.available, 0)
-  const running = pickFirstDefined(raw?.running, 0)
-  const processing = pickFirstDefined(raw?.processing, 0)
-  const stop = pickFirstDefined(raw?.stop, 0)
+  const total = pickFirstDefined(raw?.total, engines.length, 0);
+  const available = pickFirstDefined(raw?.available, 0);
+  const running = pickFirstDefined(raw?.running, 0);
+  const processing = pickFirstDefined(raw?.processing, 0);
+  const stop = pickFirstDefined(raw?.stop, 0);
   const workerActiveTotal = pickFirstDefined(
     raw?.worker_active_total,
     raw?.workerActiveTotal,
     0,
-  )
+  );
   const workerOnlineEngines = pickFirstDefined(
     raw?.worker_online_engines,
     raw?.workerOnlineEngines,
     engines.length,
-  )
+  );
 
-  const engineColumns = engines.map(mapEngineToColumn)
-  const workers = flattenEngineWorkers(engineColumns)
-  const healthStatus = String(raw?.status ?? '').toLowerCase() || null
-  const isRunning = running > 0 || processing > 0
-  const totalWorkerSlots = workers.length
+  const engineColumns = engines.map(mapEngineToColumn);
+  const workers = flattenEngineWorkers(engineColumns);
+  const healthStatus = String(raw?.status ?? "").toLowerCase() || null;
+  const isRunning = running > 0 || processing > 0;
+  const totalWorkerSlots = workers.length;
+  const explicitWorkerTotal = resolveRawWorkerTotal(raw);
+  const workerCount = pickFirstDefined(
+    explicitWorkerTotal,
+    workerActiveTotal,
+    totalWorkerSlots,
+    0,
+  );
 
   return {
     healthStatus,
     isRunning,
     engines: engineColumns,
-    workerCount: totalWorkerSlots || workerActiveTotal,
+    workerCount,
     activeWorkerCount: workerActiveTotal,
     workers,
     engineTotals: {
@@ -249,34 +260,34 @@ export function mapEngineStatusResponse(raw) {
       stop,
       workerActiveTotal,
       workerOnlineEngines,
-      totalWorkerSlots,
+      totalWorkerSlots: workerCount,
     },
-    source: 'engine-status',
-  }
+    source: "engine-status",
+  };
 }
 
 export function mergeEngineStatus(documentStatus, apiStatus) {
   const processingCount = Math.max(
     documentStatus.processingCount ?? 0,
     apiStatus.engineTotals.processing ?? 0,
-  )
-  const queueLength = documentStatus.queueLength ?? 0
+  );
+  const queueLength = documentStatus.queueLength ?? 0;
 
-  let clusterStatus = 'idle'
+  let clusterStatus = "idle";
   if (processingCount > 0) {
-    clusterStatus = 'working'
+    clusterStatus = "working";
   } else if (queueLength > 0) {
-    clusterStatus = 'waiting'
+    clusterStatus = "waiting";
   }
 
   const isRunning =
     processingCount > 0 ||
     queueLength > 0 ||
     apiStatus.isRunning ||
-    (apiStatus.engineTotals.running ?? 0) > 0
+    (apiStatus.engineTotals.running ?? 0) > 0;
 
-  const engines = apiStatus.engines
-  const workers = flattenEngineWorkers(engines)
+  const engines = apiStatus.engines;
+  const workers = flattenEngineWorkers(engines);
 
   return {
     ...documentStatus,
@@ -290,6 +301,6 @@ export function mergeEngineStatus(documentStatus, apiStatus) {
     processingCount,
     healthStatus: apiStatus.healthStatus,
     engineTotals: apiStatus.engineTotals,
-    source: 'engine-status+scoring-jobs',
-  }
+    source: "engine-status+scoring-jobs",
+  };
 }

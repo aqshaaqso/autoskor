@@ -38,15 +38,28 @@ function countTotalWorkers(engines) {
   );
 }
 
+function formatEngineWorkerTitle(engineCount, workerCount) {
+  if (engineCount > 0 || workerCount > 0) {
+    return `${engineCount} Engine, ${workerCount} Worker`;
+  }
+
+  return "Engine & Worker";
+}
+
 export function WorkerSection({
   engines = [],
   workers = [],
   healthStatus = null,
+  engineCount,
+  workerCount,
+  activeWorkerCount,
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const columns = resolveEngineColumns(engines, workers);
-  const activeWorkers = countActiveWorkers(columns);
-  const totalWorkers = countTotalWorkers(columns);
+  const resolvedEngineCount = engineCount ?? columns.length;
+  const resolvedWorkerCount = workerCount ?? countTotalWorkers(columns);
+  const resolvedActiveWorkerCount =
+    activeWorkerCount ?? countActiveWorkers(columns);
 
   return h(
     "div",
@@ -70,7 +83,12 @@ export function WorkerSection({
         h(
           "h2",
           { className: "text-lg font-semibold text-slate-900" },
-          "Engine & Worker",
+          formatEngineWorkerTitle(resolvedEngineCount, resolvedWorkerCount),
+        ),
+        h(
+          "span",
+          { className: "text-sm text-slate-500" },
+          `${resolvedActiveWorkerCount} aktif`,
         ),
       ),
       h(ChevronDown, {

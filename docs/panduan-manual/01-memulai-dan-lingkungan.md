@@ -74,7 +74,7 @@ Saat `VITE_USE_MOCK_AUTH=true`:
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | `admin@koperasi.id` | `admin123` |
-| User | `operator@koperasi.id` | `user123` |
+| User | `user@koperasi.id` | `user123` |
 
 Data mock ada di `src/shared/api/mock/authMock.js`.
 

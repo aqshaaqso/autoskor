@@ -46,7 +46,7 @@ File: `src/shared/api/mock/authMock.js`
 | Email | Password | Role |
 |-------|----------|------|
 | `admin@koperasi.id` | `admin123` | `admin` |
-| `operator@koperasi.id` | `user123` | `user` |
+| `user@koperasi.id` | `user123` | `user` |
 
 ### Menambah user mock
 

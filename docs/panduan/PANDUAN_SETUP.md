@@ -68,7 +68,7 @@ Buka browser: **http://localhost:5173**
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | `admin@koperasi.id` | `admin123` |
-| User | `operator@koperasi.id` | `user123` |
+| User | `user@koperasi.id` | `user123` |
 
 ---
 

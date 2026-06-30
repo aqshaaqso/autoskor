@@ -93,6 +93,12 @@ export function EngineDashboardPage() {
               engines: engineStatus.engines ?? [],
               workers: engineStatus.workers ?? [],
               healthStatus: engineStatus.healthStatus ?? null,
+              engineCount:
+                engineStatus.engineTotals?.total ??
+                engineStatus.engines?.length ??
+                0,
+              workerCount: engineStatus.workerCount ?? 0,
+              activeWorkerCount: engineStatus.activeWorkerCount ?? 0,
             }),
             h(EngineStatsGrid, { engineStatus }),
             h(RecentActivityList, { items: engineStatus.recentActivity }),

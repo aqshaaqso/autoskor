@@ -2,6 +2,12 @@ import { createElement as h } from "react";
 import { formatDateTime } from "@/shared/utils/format";
 
 export function ClusterStatusPanel({ engineStatus }) {
+  const engineCount =
+    engineStatus.engineTotals?.total ?? engineStatus.engines?.length ?? 0;
+  const activeWorkerCount =
+    engineStatus.activeWorkerCount ?? engineStatus.workerCount ?? 0;
+  const workerCount = engineStatus.workerCount ?? activeWorkerCount;
+
   // Helper untuk format waktu proses
   const formatProcessingTime = (ms) => {
     if (!ms) return "0 detik";
@@ -35,7 +41,7 @@ export function ClusterStatusPanel({ engineStatus }) {
         h(
           "p",
           { className: "text-sm font-medium text-slate-500" },
-          "Status Worker",
+          "Status Engine",
         ),
         h(
           "p",
@@ -43,9 +49,15 @@ export function ClusterStatusPanel({ engineStatus }) {
           h(
             "span",
             { className: "font-semibold text-slate-900" },
-            `${engineStatus.activeWorkerCount ?? engineStatus.workerCount ?? 0}`,
+            `${engineCount}`,
           ),
-          " worker aktif",
+          " engine, ",
+          h(
+            "span",
+            { className: "font-semibold text-slate-900" },
+            `${activeWorkerCount}`,
+          ),
+          ` dari ${workerCount} worker aktif`,
         ),
       ),
       h(
