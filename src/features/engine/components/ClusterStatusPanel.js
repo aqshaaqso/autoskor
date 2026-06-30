@@ -43,7 +43,7 @@ export function ClusterStatusPanel({ engineStatus }) {
           h(
             "span",
             { className: "font-semibold text-slate-900" },
-            `${engineStatus.workerCount ?? engineStatus.workers?.length ?? 0} dari ${engineStatus.activeWorkerCount ?? 0}`,
+            `${engineStatus.activeWorkerCount ?? engineStatus.workerCount ?? 0}`,
           ),
           " worker aktif",
         ),
@@ -75,3 +75,5 @@ export function ClusterStatusPanel({ engineStatus }) {
     ),
   );
 }
+
+

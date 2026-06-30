@@ -96,19 +96,7 @@ export function EngineColumnCard({ engine }) {
         ),
       ),
     ),
-    workers.length > 0
-      ? h(
-          "div",
-          { className: "space-y-2" },
-          workers.map((worker) => h(WorkerRow, { key: worker.id, worker })),
-        )
-      : h(
-          "p",
-          {
-            className:
-              "rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500",
-          },
-          "Belum ada worker aktif.",
-        ),
-  );
+    h("div", { className: "mt-auto text-sm text-slate-800 font-semibold" }, `${workers.length} Worker`),);
 }
+
+

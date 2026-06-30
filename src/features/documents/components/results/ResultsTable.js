@@ -57,7 +57,7 @@ function IndicatorScoreCard({ row }) {
           h(
             'span',
             { className: 'font-bold text-slate-700' },
-            formatNilaiRasio(row.nilaiRasio, row.skor),
+            row.nilaiRasio === 0 ? '0' : formatNilaiRasio(row.nilaiRasio, row.skor),
           ),
         ),
         h(
